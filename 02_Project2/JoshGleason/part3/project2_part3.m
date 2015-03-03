@@ -1,4 +1,4 @@
-function project3()
+function project2_part3()
     close all
 
     % Query for data directory (default if canceled)
