@@ -139,6 +139,10 @@ function roc_area = test_classifier(model, images, truth, title_str, line_type)
     fpr = fp / sum(~t);
     fnr = fn / sum(t);
     
+    % calculate a good threshold
+    [~,thresh_idx] = min(fpr.^2+fnr.^2);
+    fprintf('Good Threshold : %4.9f\n', thresh_range(thresh_idx));
+    
     figure(10); hold on;
     plot(fpr, fnr, line_type, 'LineWidth', 2);
     xlabel('False Positive Rate');
