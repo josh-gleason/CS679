@@ -48,7 +48,7 @@ function A = mapping4distribution(covM)
 
 % Program:  mapping4distribution
 %
-% Purpose: Find the mathematical mapping from a normal uncorrelation 
+% Purpose: Find the mathematical mapping from a normal white 
 %   gaussian distribution to a normal distribution with specified 
 %   covariance.
 %

@@ -108,46 +108,48 @@ plot(samples(2).features(1,:),samples(2).features(2,:),'r.');
 %--------------------------------------------------------------------
 % Create a meshgrid plot of the Gaussian distributions
 % to visually determine if the random numbers look Gaussian.
-minF1 = -5; maxF1 = 10;
-minF2 = -5; maxF2 = 10;
-deltaF1 = max(ceil(maxF1 - minF1),ceil(maxF2 - minF2));
-deltaF2 = deltaF1;
-df1 = deltaF1 / 500;
-df2 = deltaF2 / 500;
-[f1, f2]=meshgrid(minF1:df1:maxF1,minF2:df2:maxF2);
-
-pxW1 = normalDensity([f1(:)'; f2(:)'],classifierParams(1));
-pxW2 = normalDensity([f1(:)'; f2(:)'],classifierParams(2));
-
-figure; 
-mesh(f1,f2,reshape(pxW1,size(f1))); hold on;
-mesh(f1,f2,reshape(pxW2,size(f2)));
+% minF1 = -5; maxF1 = 10;
+% minF2 = -5; maxF2 = 10;
+% deltaF1 = max(ceil(maxF1 - minF1),ceil(maxF2 - minF2));
+% deltaF2 = deltaF1;
+% df1 = deltaF1 / 500;
+% df2 = deltaF2 / 500;
+% [f1, f2]=meshgrid(minF1:df1:maxF1,minF2:df2:maxF2);
+% 
+% pxW1 = normalDensity([f1(:)'; f2(:)'],classifierParams(1));
+% pxW2 = normalDensity([f1(:)'; f2(:)'],classifierParams(2));
+% 
+% figure; 
+% mesh(f1,f2,reshape(pxW1,size(f1))); hold on;
+% mesh(f1,f2,reshape(pxW2,size(f2)));
 
 %--------------------------------------------------------------------
 %
 %  Determine the probability of error and the Chernoff and
 %  Bhattacharyya error bounds.
 %
-bFactor = 0:0.05:1;
-pW1 = classifierParams(1).pClass;
-pW2 = classifierParams(2).pClass;
-pError = zeros(length(bFactor),1);
-chernoffErr = zeros(length(bFactor),1);
-for iB = 1:numel(bFactor)
-    bV = bFactor(iB);
-    pError(iB) = (pW1^bV)*(pW2^(1-bV))*df1*df2*sum(sum((pxW1.^(bV)).*(pxW2.^(1-bV))));
-    chernoffErr(iB) = chernoffErrorNormal(bV, classifierParams);
-end
-bhattacharyaaErr = bhattacharyaaErrorNormal(classifierParams);
-fprintf(1,'P(error)=%f Chernoff bound=%f  Bhattcharyya bound=%f\n',...
-    min(pError(:)),min(chernoffErr(:)),min(bhattacharyaaErr(:)));
+% bFactor = 0:0.05:1;
+% pW1 = classifierParams(1).pClass;
+% pW2 = classifierParams(2).pClass;
+% pError = zeros(length(bFactor),1);
+% chernoffErr = zeros(length(bFactor),1);
+% for iB = 1:numel(bFactor)
+%     bV = bFactor(iB);
+%     pError(iB) = (pW1^bV)*(pW2^(1-bV))*df1*df2*sum(sum((pxW1.^(bV)).*(pxW2.^(1-bV))));
+%     chernoffErr(iB) = chernoffErrorNormal(bV, classifierParams);
+% end
+% bhattacharyaaErr = bhattacharyaaErrorNormal(classifierParams);
+% fprintf(1,'P(error)=%f Chernoff bound=%f  Bhattcharyya bound=%f\n',...
+%     min(pError(:)),min(chernoffErr(:)),min(bhattacharyaaErr(:)));
+% 
+% % Plot prob of error for varying beta.
+% figure; 
+% plot(bFactor,pError,'b');
+% title('Probability of Error');
+% axis([0 1.1 0 1.1]); grid on;
+% xlabel('\beta'); ylabel('P(error)');
 
-% Plot prob of error for varying beta.
-figure; 
-plot(bFactor,pError,'b');
-title('Probability of Error');
-axis([0 1.1 0 1.1]); grid on;
-xlabel('\beta'); ylabel('P(error)');
+errorBounds(classifierParams)
 
 %----------------------------------------------------------------
 % C) Now classify all the samples from all the classes

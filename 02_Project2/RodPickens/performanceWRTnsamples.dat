@@ -1,0 +1,42 @@
+Experiment 1: Train on 10,000 and test on 10,000.
+  Maximum Likelihood Estimate with nSamples = 10000
+    tru class 1: u=<1.000000, 1.000000> C=<1.000000, 0.000000; 0.000000, 1.000000>
+    est class 1: u=<1.015535, 0.991517> C=<1.016669, 0.006662; 0.006662, 1.010287>
+
+    tru class 2: u=<4.000000, 4.000000> C=<1.000000, 0.000000; 0.000000, 1.000000>
+    est class 2: u=<4.015535, 3.991517> C=<1.016669, 0.006662; 0.006662, 1.010287>
+  
+  Performance
+    P(error)=0.054625 Chernoff bound=0.101577  Bhattcharyya bound=0.101577
+    iClass=1 Pd = 0.980900 Pfa = 0.019100
+    iClass=2 Pd = 0.981900 Pfa = 0.018100
+
+Experiment 2: Train on 5,000 and test on 10,000.
+P(error)=0.055743 Chernoff bound=0.099396  Bhattcharyya bound=0.099396
+iClass=1 Pd = 0.981800 Pfa = 0.018200
+iClass=2 Pd = 0.981500 Pfa = 0.018500
+
+Experiment 3: Train on 2,500 and test on 10,000.
+P(error)=0.058580 Chernoff bound=0.094324  Bhattcharyya bound=0.094324
+iClass=1 Pd = 0.980200 Pfa = 0.019800
+iClass=2 Pd = 0.980200 Pfa = 0.019800
+
+Experiment 4: Train on 1,250 and test on 10,000.
+P(error)=0.053017 Chernoff bound=0.104679  Bhattcharyya bound=0.104679
+iClass=1 Pd = 0.985400 Pfa = 0.014600
+iClass=2 Pd = 0.985100 Pfa = 0.014900
+
+Experiment 5: Train on 1,000 and test on 10,000.
+P(error)=0.052321 Chernoff bound=0.105804  Bhattcharyya bound=0.105804
+iClass=1 Pd = 0.981800 Pfa = 0.018200
+iClass=2 Pd = 0.984500 Pfa = 0.015500
+
+Experiment 6: Train on 100 and test on 10,000.
+P(error)=0.028080 Chernoff bound=0.164903  Bhattcharyya bound=0.164903
+iClass=1 Pd = 0.991800 Pfa = 0.008200
+iClass=2 Pd = 0.989800 Pfa = 0.010200
+
+Experiment 7: Train on 10 and test on 10,000.
+P(error)=0.018880 Chernoff bound=0.120305  Bhattcharyya bound=0.120305
+iClass=1 Pd = 0.995300 Pfa = 0.004700
+iClass=2 Pd = 0.995700 Pfa = 0.004300
