@@ -1,4 +1,4 @@
-function run_part(samples, n_training, axTitle)
+function err_ratio = run_part(samples, n_training, axTitle)
 % RUN_PART Run the experiments described in Project 1 part a.
 %   @params  Struct containing the parameters of two 2D normal
 %    |       distributions
@@ -91,56 +91,58 @@ function run_part(samples, n_training, axTitle)
     % ii) Plot the Bayes decision boundry together with the generated
     %     samples
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    figure(); hold('on');
-    % Plot the points
-    plot(samples2(1,class2==1), samples2(2,class2==1), ' .', 'Color', [0.2 0.2 0.5]);
-    plot(samples2(1,class2==2), samples2(2,class2==2), ' .', 'Color', [0.3 0.3 0.9]);
-    plot(samples1(1,class1==2), samples1(2,class1==2), ' .', 'Color', [0.5 0.2 0.2]);
-    plot(samples1(1,class1==1), samples1(2,class1==1), ' .', 'Color', [0.9 0.3 0.3]);
-    axis('equal'); ax = axis();
-    % Plot the decision boundry
-    boundary_plot(params, priors); hold on;
-    plot([params.mu1(1) params.mu2(1)], [params.mu1(2) params.mu2(2)], ' .k', 'Markersize', 25);
-    axis(ax);
-    h = legend('Misclassified \omega_{2} samples', ...
-               'Correct \omega_{2} samples', ...
-               'Misclassified \omega_{1} samples', ...
-               'Correct \omega_{1} samples', ...
-               'Decision Boundry', ...
-               'Mean of p(x|\omega_{i})', ...
-               'Location', 'EastOutside');
-    % show results in title of figure
-    title1 = sprintf('%s\nError rate: %5.2f%%', axTitle, err_percent);
-    title(title1);
-    % make room for legend in figure
-    pos = get(gcf, 'Position'); pos(3) = pos(3)*1.5; set(gcf, 'Position', pos);
-    
+    if exist('axTitle', 'var')
+        figure(); hold('on');
+        % Plot the points
+        plot(samples2(1,class2==1), samples2(2,class2==1), ' .', 'Color', [0.2 0.2 0.5]);
+        plot(samples2(1,class2==2), samples2(2,class2==2), ' .', 'Color', [0.3 0.3 0.9]);
+        plot(samples1(1,class1==2), samples1(2,class1==2), ' .', 'Color', [0.5 0.2 0.2]);
+        plot(samples1(1,class1==1), samples1(2,class1==1), ' .', 'Color', [0.9 0.3 0.3]);
+        axis('equal'); ax = axis();
+        % Plot the decision boundry
+        boundary_plot(params, priors); hold on;
+        plot([params.mu1(1) params.mu2(1)], [params.mu1(2) params.mu2(2)], ' .k', 'Markersize', 25);
+        axis(ax);
+        h = legend('Misclassified \omega_{2} samples', ...
+                   'Correct \omega_{2} samples', ...
+                   'Misclassified \omega_{1} samples', ...
+                   'Correct \omega_{1} samples', ...
+                   'Decision Boundry', ...
+                   'Mean of p(x|\omega_{i})', ...
+                   'Location', 'EastOutside');
+        % show results in title of figure
+        title1 = sprintf('%s\nError rate: %5.2f%%', axTitle, err_percent);
+        title(title1);
+        % make room for legend in figure
+        pos = get(gcf, 'Position'); pos(3) = pos(3)*1.5; set(gcf, 'Position', pos);
+    end
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % iv) Plot the Chernoff bound as a function of beta and find the
     %     optimum beta for the minimum P(error)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    figure(); hold('on');
-    % Compute error bound as a function of beta and find the Chernoff bound
-    beta = 0:0.01:1;
-    err = err_bound(beta, params, priors);
-    [chernoff_bound, idx] = min(err);
-    chernoff_beta = beta(idx);
-    % Compute the Bhattacharyya bound
-    bhattacharyya_beta = 0.5;
-    bhattacharyya_bound = err_bound(bhattacharyya_beta, params, priors);
-    % Approximate true P(error)
-    err_truth = err_approx(params, priors);
-    % Plot results
-    plot(beta, err, '-k', 'LineWidth', 2);
-    plot([bhattacharyya_beta([1,1]), 0], [0, bhattacharyya_bound([1,1])], '--k');
-    plot([chernoff_beta([1,1]), 0], [0, chernoff_bound([1,1])], '--r');
-    text(0.02, bhattacharyya_bound, 'Bhattacharyya', 'VerticalAlignment', 'bottom');
-    text(0.02, chernoff_bound, 'Chernoff', 'VerticalAlignment', 'top', 'Color', 'Red');
-    xlabel('\beta');
-    ylabel('P(error) upper bound');
-    title2 = sprintf(['%s\nBhattacharyya bound : P(error) \\leq %5.2f%%', ...
-                      '\nChernoff bound : P(error) \\leq %5.2f%% (\\beta = %.2f)' ...
-                      '\nTrue P(error) = %5.2f%%'], ...
-                      axTitle, bhattacharyya_bound*100, chernoff_bound*100, chernoff_beta, err_truth*100);
-    title(title2);
+%     figure(); hold('on');
+%     % Compute error bound as a function of beta and find the Chernoff bound
+%     beta = 0:0.01:1;
+%     err = err_bound(beta, params, priors);
+%     [chernoff_bound, idx] = min(err);
+%     chernoff_beta = beta(idx);
+%     % Compute the Bhattacharyya bound
+%     bhattacharyya_beta = 0.5;
+%     bhattacharyya_bound = err_bound(bhattacharyya_beta, params, priors);
+%     % Approximate true P(error)
+%     err_truth = err_approx(params, priors);
+%     % Plot results
+%     plot(beta, err, '-k', 'LineWidth', 2);
+%     plot([bhattacharyya_beta([1,1]), 0], [0, bhattacharyya_bound([1,1])], '--k');
+%     plot([chernoff_beta([1,1]), 0], [0, chernoff_bound([1,1])], '--r');
+%     text(0.02, bhattacharyya_bound, 'Bhattacharyya', 'VerticalAlignment', 'bottom');
+%     text(0.02, chernoff_bound, 'Chernoff', 'VerticalAlignment', 'top', 'Color', 'Red');
+%     xlabel('\beta');
+%     ylabel('P(error) upper bound');
+%     title2 = sprintf(['%s\nBhattacharyya bound : P(error) \\leq %5.2f%%', ...
+%                       '\nChernoff bound : P(error) \\leq %5.2f%% (\\beta = %.2f)' ...
+%                       '\nTrue P(error) = %5.2f%%'], ...
+%                       axTitle, bhattacharyya_bound*100, chernoff_bound*100, chernoff_beta, err_truth*100);
+%     title(title2);
 end

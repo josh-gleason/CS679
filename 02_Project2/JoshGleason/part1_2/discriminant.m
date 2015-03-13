@@ -28,9 +28,5 @@ function p = g(x, mu, s, prior)
     w  = s\mu;
     w0 = -0.5*(mu'/s)*mu - 0.5*log(det(s)) + log(prior);
     % compute discriminator value for each x
-    [~,n] = size(x);
-    p = zeros(1, n);
-    for idx=1:n
-        p(idx) = (x(:,idx)'*W)*x(:,idx) + w'*x(:,idx) + w0;
-    end
+    p = sum(x.*(W*x),1) + w'*x + w0;
 end
