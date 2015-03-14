@@ -10,6 +10,8 @@
 %
 %-----------------------------------------------------------
 
+close all; clear all; clc; fclose('all');
+
 %-----------------------------------------------------------
 % generate or read feature data
 %
@@ -20,7 +22,7 @@ cDef = repmat(cp,2,1);
 
 % Class 1 description
 % 
-cDef(1).mV = [1; 1];
+cDef(1).mV = [0; 0];
 cDef(1).cM = [1  0; 0 1];
 cDef(1).pC = 0.5;
 cDef(1).nS = 10000;
@@ -28,7 +30,7 @@ cDef(1).fV = zeros(nFeats,cDef(1).nS);
 
 % Class 2 description
 % 
-cDef(2).mV = [4; 4];
+cDef(2).mV = [0; 0];
 cDef(2).cM = [1  0; 0  1];
 cDef(2).pC = 1 - cDef(1).pC;
 cDef(2).nS = 10000;
@@ -51,53 +53,80 @@ end
 %
 %    chose a subset of the n features for classification.
 %
-% In future, use the function call features2keep = selectFeatures(features);
+% In future, use the function call 
+%
+%        features2keep = selectFeatures(features);
 % 
-% For now, keep all features.
+% For now, keep all features or manually select the desired features.
+%      
+%          features2keep = 1:nFeats;
+%
 features2keep = 1:nFeats;
+% Now keep the desired features.
+features = features(features2keep,:);
 
 %-----------------------------------------------------------
-% trainClassifier
-% 
-%  Determine the mean and covariance of each class
-%  
-nSkip = 1;
-cp = struct('bd',NaN);
-classDec  = repmat(cp,nClasses,1);
-decisions = -inf(1,nTotalSamples);
-for iClass = 1:nClasses
-   
-   % Retrieve the feature vector
-   fV = cDef(iClass).fV; 
-   
-   % Retrieve the a-priori probability
-   pC = cDef(iClass).pC;
-   
-   % Estimate the classifier params
-   [meanV, covM] = trainClassifier(fV, nSkip, features2keep);
-   
-   % Classifiy all samples according to the classifier
-   classDec(iClass).bd = zeros(1,nTotalSamples);
-   classDec(iClass).bd = bayesianClassifier(features, meanV, covM, pC);
-   
-   % Determine if new probs are 
-   selection = classDec(iClass).bd > decisions ;
-   decisions(selection) = iClass;
-   
+% Now train and classify the samples
+nSkip = 1000;
+fprintf(1,'-------------\n');
+for iTrial = 1:5
+    
+    nKeep = round(cDef(iClass).nS / nSkip);
+    
+    samples2keep = round(cDef(iClass).nS*rand(1,nKeep));
+    
+    %-----------------------------------------------------------
+    % trainClassifier
+    %
+    %  Determine the mean and covariance of each class
+    %
+    
+    classScore = zeros(nClasses,nTotalSamples);
+    for iClass = 1:nClasses
+        
+        % Retrieve the feature vector
+        fV = cDef(iClass).fV(features2keep,samples2keep);
+        
+        % Retrieve the a-priori probability
+        pC = cDef(iClass).pC;
+        
+        % Estimate the classifier params
+        [meanV, covM] = trainClassifier(fV);
+%         fprintf(1,'class = %d\n',iClass);
+%         disp(meanV);
+%         disp(covM);
+        
+        % Classifiy all samples according to the classifier
+        classScore(iClass,:) = bayesianClassifier(features, meanV, covM, pC);
+        
+        figure; plot(1:nTotalSamples,classScore(iClass,:),'.');
+        
+        title(sprintf('mapping all samples class %d',iClass));
+        grid on; xlabel('sample'); ylabel('classifier mapping');
+        
+    end
+    [score, decisions]=max(classScore,[],1);
+    
+    fprintf(1,'Classifier results:\n');
+    truePositives  = zeros(nClasses,1);
+    falsePositives = zeros(nClasses,1);
+    falseNegatives = zeros(nClasses,1);
+    for iClass = 1:nClasses
+        
+        truthSameClass  = (truth == iClass);
+        truthDiffClass  = (truth ~= iClass);
+        
+        nSS = cDef(iClass).nS;       % number of samples in same class
+        nSD = nTotalSamples - nSS;   % number of samples in diff class
+        
+        truePositives(iClass)  = sum(decisions(truthSameClass)==iClass)/nSS;
+        falsePositives(iClass) = sum(decisions(truthDiffClass)==iClass)/nSD;
+        falseNegatives(iClass) = sum(decisions(truthSameClass)~=iClass)/nSS;
+        
+        fprintf(1,'\tiClass = %d tp = %f fp = %f fn = %f\n',iClass,...
+            truePositives(iClass),falsePositives(iClass),falseNegatives(iClass));
+    end
+    
 end
-
-truePositives  = zeros(nClasses,1);
-falsePositives = zeros(nClasses,1);
-falseNegatives  = zeros(nClasses,1);
-for iClass = 1:nClasses
-  sameClass = decisions(decisions == iClass);
-  diffClass = decisions(decisions ~= iClass);
-   
-  truePositives(iClass)  = decisions(sameClass) == truth(truth == iClass);
-  falsePositives(iClass) = decisions(sameClass) == truth(truth ~= iClass);
-  falseNegatives(iClass) = decisions(diffClass) == truth(truth == iClass); 
-
-end
-
 
 

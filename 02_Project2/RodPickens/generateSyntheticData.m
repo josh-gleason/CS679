@@ -65,3 +65,4 @@ sampleData = A*randn(numel(meanV),nSamples) + repmat(meanV,1,nSamples);
 fprintf(1,'Done create samples for class.  Time = %f (sec)\n',toc(tBeg));
 
 end
+

@@ -32,7 +32,7 @@
 %
 %-------------------------------------------------------------
 
-function [meanV, covM] = trainClassifier(dataMatrix,nColSkip,featuresKeep)
+function [meanV, covM] = trainClassifier(dataMatrix)
 %clc; close all; clear all; fclose('all');
 
 % % Input parameters
@@ -46,17 +46,17 @@ function [meanV, covM] = trainClassifier(dataMatrix,nColSkip,featuresKeep)
 % dataMatrix = csvread([pn filesep fn]);
 
 % Keep only the features selected
-[~, nc] = size(dataMatrix);
-colKeep = 1:nColSkip:nc;
-
-%nKept   = numel(colKeep);
-
-dataMatrix = dataMatrix(featuresKeep,colKeep);
+[nr, ~] = size(dataMatrix);
 
 % Now train the classifier using maximum likelihood assuming
 % a model of Gaussian
-meanV = mean(dataMatrix,2);
-covM  = cov(dataMatrix,dataMatrix');
+if nr == 1
+   meanV = mean(dataMatrix);
+   covM  = cov(dataMatrix);
+else
+   meanV = mean(dataMatrix,2);
+   covM  = cov(dataMatrix,dataMatrix');
+end
 
 % Save the training for the classifier
 %fileOut = sprintf('%s_nSamples_%d',strrep(fn,'data.dat','params.dat'),nKept);
