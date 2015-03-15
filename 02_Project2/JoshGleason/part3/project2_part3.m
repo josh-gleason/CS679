@@ -22,8 +22,8 @@ function project2_part3()
     idx_train = 1;
     idx_test  = [2, 3];
 
-    model_rgb = train_classifier(images_rgb{idx_train}, truth{idx_train});
-    roc_rgb = test_classifier(model_rgb, images_rgb(idx_test), truth(idx_test), 'RGB', '-r');
+    [model_face_rgb, model_bg_rgb] = train_classifier(images_rgb{idx_train}, truth{idx_train});
+    roc_rgb = test_classifier(model_face_rgb, model_bg_rgb, images_rgb(idx_test), truth(idx_test), 'RGB', '-r');
     
     % Convert from RGB to Chromatic color space (Ignoring luminance)
     images_chromatic = cell(3,1);
@@ -32,8 +32,8 @@ function project2_part3()
     images_chromatic{3} = rgb_2_chromatic(images_rgb{3});
 
     % Train and test classifier
-    model_chromatic = train_classifier(images_chromatic{idx_train}, truth{idx_train});
-    roc_chromatic = test_classifier(model_chromatic, images_chromatic(idx_test), truth(idx_test), 'Chromatic', '-b');
+    [model_face_chromatic, model_bg_chromatic] = train_classifier(images_chromatic{idx_train}, truth{idx_train});
+    roc_chromatic = test_classifier(model_face_chromatic, model_bg_chromatic, images_chromatic(idx_test), truth(idx_test), 'Chromatic', '-b');
     
     % Convert from RGB to CbCr color space (Ignoring luminance)
     images_cbcr = cell(3,1);
@@ -42,53 +42,65 @@ function project2_part3()
     images_cbcr{3} = rgb_2_cbcr(images_rgb{3});
 
     % Train and test classifier
-    model_cbcr = train_classifier(images_cbcr{idx_train}, truth{idx_train});
-    roc_cbcr = test_classifier(model_cbcr, images_cbcr(idx_test), truth(idx_test), 'YCbCr', '-k');
+    [model_face_cbcr, model_bg_cbcr] = train_classifier(images_cbcr{idx_train}, truth{idx_train});
+    roc_cbcr = test_classifier(model_face_cbcr, model_bg_cbcr, images_cbcr(idx_test), truth(idx_test), 'YCbCr', '-k');
     
     figure(10);
     legend('RGB', 'Chromatic', 'YCbCr');
     title(sprintf('ROC Area\nRGB : %0.04f\nChromatic : %0.04f\nYCbCr : %0.04f', roc_rgb, roc_chromatic, roc_cbcr));
 end
 
-function model = train_classifier(image, truth)
+function [model_face, model_bg] = train_classifier(image, truth)
     % count number of dimensions in image
     [~,~,d] = size(image);
 
     % Extract training data from image (just calculate the x,y locations which are skin)
-    target_idx = find(truth(:));
-    n = length(target_idx);
+    face_idx = find(truth(:));
+    bg_idx = find(~truth(:));
+    n_face = length(face_idx);
+    n_bg = length(bg_idx);
 
     % Build matrix of samples (d rows by n columns)
-    x = zeros(d, n);
+    x_face = zeros(d, n_face);
+    x_bg = zeros(d, n_bg);
     for dim = 1:d
         % get a channel from the image then get labeled targets from that channel
         channel = image(:,:,dim);
-        x(dim,:) = channel(target_idx);
+        x_face(dim,:) = channel(face_idx);
+        x_bg(dim,:) = channel(bg_idx);
     end
 
-    model = struct('mean', [], 'covariance', []);
+    model_face = struct('mean', [], 'covariance', []);
+    model_bg = struct('mean', [], 'covariance', []);
     
     % Compute mean by summing across columns and dividing by n
-    model.mean = sum(x,2) / n;
+    model_face.mean = sum(x_face,2) / n_face;
+    model_bg.mean = sum(x_bg,2) / n_bg;
     % subtract the mean from X to compute covariance
-    x0 = bsxfun(@minus, x, model.mean);
+    x0_face = bsxfun(@minus, x_face, model_face.mean);
+    x0_bg = bsxfun(@minus, x_bg, model_bg.mean);
     % compute covariance
-    model.covariance = x0*x0' / (n-1);
+    model_face.covariance = x0_face*x0_face' / (n_face-1);
+    model_bg.covariance = x0_bg*x0_bg' / (n_bg-1);
+    
+    % compute priors
+    model_face.prior = n_face / (n_face + n_bg);
+    model_bg.prior = 1 - model_face.prior;
 end
 
-function roc_area = test_classifier(model, images, truth, title_str, line_type)
+function roc_area = test_classifier(model_face, model_bg, images, truth, title_str, line_type)
     % Test classifier (assumes all images are same size)
     [r,c,d] = size(images{1});
     n_images = length(images);
 
     % initialize matrix containing all test data and truth
     x = zeros(d, (r*c)*n_images);
-    t = false(1, (r*c)*n_images);
+    face_truth = false(1, (r*c)*n_images);
 
     % put all pixels from all images into x matrix
     for idx = 1:n_images
         image = images{idx};
-        skin = truth{idx};
+        face = truth{idx};
         
         % region of x to add data to
         idx0 = (idx-1)*(r*c)+1;
@@ -101,12 +113,19 @@ function roc_area = test_classifier(model, images, truth, title_str, line_type)
         end
         
         % store truth in single corresponding row vector
-        t(idx0:idx1) = skin(:);
+        face_truth(idx0:idx1) = face(:);
     end
     
+    priors.p1 = model_face.prior;
+    priors.p2 = model_bg.prior;
+    params.sigma1 = model_face.covariance;
+    params.sigma2 = model_bg.covariance;
+    params.mu1 = model_face.mean;
+    params.mu2 = model_bg.mean;
+
     % calculate probability density of each pixel using model
-    p = mvgaussian_pdf(x, model.mean, model.covariance);
-    
+    g = discriminant(x, params, priors);
+
     % show an image of the probability of skin
     for idx = 1:n_images
         figure();
@@ -114,40 +133,47 @@ function roc_area = test_classifier(model, images, truth, title_str, line_type)
         % reshape into original image shape
         idx0 = (idx-1)*(r*c)+1;
         idx1 = (idx)*(r*c);
-        imagesc(reshape(p(idx0:idx1), [r,c]));
+        imagesc(reshape(g(idx0:idx1), [r,c]));
         
         title(sprintf('Probability Density Image %s Test Image %d', title_str, idx));
         colorbar;
     end
-    
-    % compute ROC curves
-    min_thresh = 0;
-    max_thresh = 1/sqrt(det(model.covariance)*(2*pi)^d);
-    idx = 1;
-    fp = zeros(1,50);
-    fn = zeros(1,50);
-    % space the thresholds using log spacing
-    thresh_range = fliplr(logspace(log10(min_thresh+1), log10(max_thresh+1), 50)-1);
-    for thresh = thresh_range;
-        skin = p>thresh;
-        not_skin = ~skin;
-        fp(idx) = sum(skin(~t)); % classified as skin but not actually skin
-        fn(idx) = sum(not_skin(t)); % not classified as skin but is actually skin
-        idx = idx + 1;
-    end
-    
-    fpr = fp / sum(~t);
-    fnr = fn / sum(t);
-    
-    % calculate a good threshold
-    [~,thresh_idx] = min(fpr.^2+fnr.^2);
-    fprintf('Good Threshold : %4.9f\n', thresh_range(thresh_idx));
-    
-    figure(10); hold on;
-    plot(fpr, fnr, line_type, 'LineWidth', 2);
-    xlabel('False Positive Rate');
-    ylabel('False Negative Rate');
-    roc_area = trapz(fpr, fnr);
+
+     % compute ROC curves
+     min_thresh = min(g(:));
+     max_thresh = max(g(:));
+     N_LOW = 50;
+     N_HIGH = 50;
+     N_TOTAL = N_LOW + N_HIGH + 1;
+     fp = zeros(1,N_TOTAL);
+     fn = zeros(1,N_TOTAL);
+
+     % space the thresholds using log spacing
+     idx = 1;
+     thresh_range_high = logspace(log10(0.01),log10(max_thresh), N_HIGH);
+     thresh_range_low = -fliplr(logspace(log10(0.01),log10(-min_thresh), N_LOW));
+     thresh_range = fliplr([thresh_range_low 0 thresh_range_high]);
+     for thresh = thresh_range;
+         face = g > thresh;
+         bg   = ~face;
+         fp(idx) = sum(face(~face_truth)); % classified as skin but not actually skin
+         fn(idx) = sum(bg(face_truth)); % not classified as skin but is actually skin
+         idx = idx + 1;
+     end
+     
+     fpr = fp / sum(~face_truth);
+     fnr = fn / sum(face_truth);
+     
+     % calculate a good threshold
+     [~,thresh_idx] = min(fpr.^2+fnr.^2);
+     fprintf('Good Threshold : %4.9f\n', thresh_range(thresh_idx));
+     
+     figure(10); hold on;
+     plot(fpr, fnr, line_type, 'LineWidth', 2);
+     plot(fpr(N_LOW+1), fnr(N_LOW+1), [' *' line_type(end)], 'LineWidth', 2);
+     xlabel('False Positive Rate');
+     ylabel('False Negative Rate');
+     roc_area = trapz(fpr, fnr);
 end
 
 function y = mvgaussian_pdf(x, mu, cov)
@@ -193,4 +219,6 @@ function image_chromatic = rgb_2_chromatic(image_rgb)
     image_chromatic(:,:,1) = image_rgb(:,:,1) ./ sum(image_rgb, 3);
     % g = G / (R + G + B)
     image_chromatic(:,:,2) = image_rgb(:,:,2) ./ sum(image_rgb, 3);
+    
+    image_chromatic(isnan(image_chromatic)) = 0;
 end
