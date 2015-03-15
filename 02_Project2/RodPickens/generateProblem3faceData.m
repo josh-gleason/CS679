@@ -12,10 +12,10 @@ function generateProblem3faceData()
 
 %clear variables; close all; clc; fclose('all');
 
-[fn, pn]=uigetfile('.\data\cs679\P2_Data\Data_Prog2\*','train image');
+[fn, pn]=uigetfile('..\data\*','train image');
 trainImg = imread([pn filesep fn]);
 
-[fn, pn]=uigetfile('.\data\cs679\P2_Data\Data_Prog2\*','ref image');
+[fn, pn]=uigetfile('..\data\*','ref image');
 refImg = imread([pn filesep fn]);
 
 %---------------------------------------------------------------
@@ -33,14 +33,16 @@ refImg = imread([pn filesep fn]);
 [fFeats, bFeats] = extractFeatures(trainImg,refImg);
 
 % 
-experiment = 'chr';
+nClasses = 2;
+experiment = 'rgb';
 tNow = datestr(now,30);
 switch lower(experiment)
     case 'rgb'
         
         faceFeats = fFeats;
         bckgndFeats = bFeats;
-        featFileName = sprintf('problem3_2classData_rgb_%s.mat',tNow);
+        featFileName = sprintf('problem3_rgb_nC=%d_nF=%d_%s.mat',nClasses,3,tNow);
+        %featFileName = sprintf('problem3_2classData_rgb_%s.mat',tNow);
         
     case 'chr'
         
@@ -52,17 +54,21 @@ switch lower(experiment)
         bckgndFeats(1,:) = bFeats(1,:)./denomBckgnd;
         bckgndFeats(2,:) = bFeats(2,:)./denomBckgnd;
         
-        featFileName = sprintf('problem3_2classData_chrRG_%s.mat',tNow);
+        featFileName = sprintf('problem3_chr_nC=%d_nF=%d_%s.mat',nClasses,2,tNow);
+        %featFileName = sprintf('problem3_2classData_chrRG_%s.mat',tNow);
         
-    case 'CrCb'
+    case 'crcb'
         
         w = [-0.169 -0.332 0.5; 0.5 -0.419 -0.081];
         
-        faceFeats = w*fFeats;        
+        faceFeats   = w*fFeats;
         bckgndFeats = w*bFeats;
         
-        featFileName = sprintf('problem3_2classData_CrCb_%s.mat',tNow);
+        featFileName = sprintf('problem3_CrBr_nC=%d_nF=%d_%s.mat',nClasses,2,tNow);
+        %featFileName = sprintf('problem3_2classData_CrCb_%s.mat',tNow);
         
+    otherwise
+        error('no case correctly selected')
 end
 
 %
@@ -107,7 +113,8 @@ for iClass = 1:nClasses
    iBeg = iEnd + 1;
 end
 
-pn = uigetdir('.','select directory to place project data');
+fprintf(1,'Save to feature directories related to %s\n',experiment);
+pn = uigetdir('.','select directory to place project data (feature files)');
 
 save([pn filesep featFileName],'-v7.3');
 

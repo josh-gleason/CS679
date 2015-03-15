@@ -1,6 +1,6 @@
 %-----------------------------------------------------------
 %
-%  Program: trainingClassifierFaceDetector
+%  Program: testingClassifierFaceDetector
 %
 %  Purpose: Select features, estimate classifier parameters,
 %     classify samples into one or more classes, estimate
@@ -25,11 +25,14 @@ pnFigures = uigetdir('.','save figures to which directory');
     
 load([pnFeats filesep fnFeats]);
 
-pnParams = uigetdir('.','select directory to place classifier parameters');
+[fnParams, pnParams] = uigetfile('*.dat','select classifier parameters');
 
-fid = fopen([pnParams filesep fileName '.dat'],'w');
+classParams = dlmread([pnParams filesep fnParams]);
 
-%-----------------------------------------------------------
+[nClasses, nColumns] = size(classParams);
+nFeatures = classParams(1,2);
+
+%----------------------------------------------------------
 % selectFeatures: 
 %
 %    Chose a subset of the n features for classification.
@@ -59,7 +62,6 @@ for iClass = nClasses:-1:1
     grid on;
     
 end
-saveas(100,[pnFigures filesep 'classSeparability'],'bmp');
 %--------------------------------------------------------
 % Now train and classify the samples
 nSkip = 1;
@@ -74,56 +76,36 @@ for iTrial = 1:1
     %
     
     classScore = zeros(nClasses,nTotalSamples);
-    
-    
+        
     for iClass = 1:nClasses
         
-        if nSkip > 1
-           nKeep = round(cDef(iClass).nS / nSkip);
-           samples2keep = round(cDef(iClass).nS*rand(1,nKeep));
-           samples2keep(samples2keep < 1) = 1;
-           samples2keep(samples2keep > cDef(iClass).nS) = cDef(iClass).nS;
-        else
-           samples2keep = 1:cDef(iClass).nS;
-        end
-    
-        % Retrieve the feature vector
-        fV = cDef(iClass).fV(features2keep,samples2keep);
+        % Classifier params
+        pC = classParams(iClass,1);
         
-        % Retrieve the a-priori probability
-        pC = cDef(iClass).pC;
+        meanV  = classParams(iClass,3:3+nFeatures-1)';
+        covM = reshape(classParams(iClass,nFeatures+3:end),nFeatures,nFeatures);
         
-        % Estimate the classifier params
-        [meanV, covM] = estimateClassifierParameters(fV);
-
-        fprintf(fid,'%f',pC);
-        fprintf(fid,',%d',numel(features2keep));
-        fprintf(fid,',%f',meanV);
-        fprintf(fid,',%f',covM);
-        if iClass < nClasses, fprintf(fid,'\n'); end
-        
-%         fprintf(1,'class = %d\n',iClass);
-%         disp(meanV);
-%         disp(covM);
+        %         fprintf(1,'class = %d\n',iClass);
+        %         disp(meanV);
+        %         disp(covM);
         
         % Classifiy all samples according to the classifier
         classScore(iClass,:) = bayesianClassifier(features, meanV, covM, pC);
         
-        figure(80); 
+        figure;
         plotData =[nan(1,cDef(1).nS) classScore(iClass,cDef(1).nS+1:end)];
-        plot(1:nTotalSamples,plotData(1:end),'r.'); 
+        plot(1:nTotalSamples,plotData(1:end),'r.');
         hold on;
-        plot(1:cDef(1).nS,classScore(1,1:cDef(1).nS),'b.'); 
+        plot(1:cDef(1).nS,classScore(1,1:cDef(1).nS),'b.');
         title(sprintf('ln P(w=%d|f)',iClass));
-        legend('background','face'); grid on;
+        legend('background','face');
         hold off;
-        saveas(80,[pnFigures filesep sprintf('classifierScores_class=%d',iClass)],'bmp');
-
+        
         figure(180); hist(classScore(iClass,:),50);
+        
         title(sprintf('histogram of scores for all samples class %d',iClass));
         grid on; xlabel('sample'); ylabel('classifier score');
-        saveas(180,[pnFigures filesep sprintf('classifierScoresHist_class=%d',iClass)],'bmp');
-       
+        
     end
     [scoreAll, decisions]=max(classScore,[],1);
     
@@ -149,7 +131,6 @@ for iTrial = 1:1
     end
     
 end
-fclose(fid);
 
 % plot the results
 truthSameClass  = truthData == 1;
@@ -201,4 +182,5 @@ xlabel('Pfa: false positive rate (FPR)');
 ylabel('Pd: true positive rate (TPR)');
 title('ROC comparing TPR versus FPR');
 saveas(450,[pnFigures filesep sprintf('TPRversusFPR')],'bmp');
+
 

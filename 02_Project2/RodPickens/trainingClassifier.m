@@ -89,6 +89,8 @@ for iTrial = 1:1
         classScore(iClass,:) = bayesianClassifier(features, meanV, covM, pC);
         
         figure; plot(1:nTotalSamples,classScore(iClass,:),'.');
+        title('classifier scores for all samples');
+        grid on;
         figure; hist(classScore(iClass,:),50);
         
         title(sprintf('mapping all samples class %d',iClass));
@@ -119,5 +121,56 @@ for iTrial = 1:1
     
 end
 fclose(fid);
+
+% plot the results
+truthSameClass  = truthData == 1;
+truthDiffClass  = truthData ~= 1;
+
+dataSame = classScore(1,truthSameClass);
+dataDiff = classScore(1,truthDiffClass);
+
+minScore = min(min(dataSame(:)),min(dataDiff(:)));
+maxScore = max(max(dataSame(:),max(dataDiff(:))));
+[histScores, histIndices]= hist([dataSame dataDiff],minScore:maxScore);
+pdfScores = histScores/sum(histScores(:));
+cdfScores = cumsum(pdfScores);
+
+minIndex = find(cdfScores < 0.01);
+minIndex = minIndex(end);
+maxIndex = find(cdfScores > 0.9999);
+maxIndex = maxIndex(1);
+pdfDomain = histIndices(minIndex):0.1:histIndices(maxIndex);  % a reasonable range for the feature scores
+
+histSame = hist(dataSame,pdfDomain); sumSame=sum(histSame);
+histDiff = hist(dataDiff,pdfDomain); sumDiff=sum(histDiff);
+
+pdfSame = histSame/sumSame;
+pdfDiff = histDiff/sumDiff;
+
+cdfSame = cumsum(pdfSame);
+cdfDiff = cumsum(pdfDiff);
+
+figure(250); 
+plot(pdfDomain,cdfSame,'b',pdfDomain,cdfDiff,'r-');
+title('cumulative density functions for both classes');
+xlabel('classifier score'); ylabel('prob');
+legend('same','diff'); grid on;
+saveas(250,[pnFigures filesep sprintf('cdf_features')],'bmp');
+
+figure(350); 
+plot(cdfDiff(1:end),cdfSame(end:-1:1),'b');
+axis([0 1 0 1]); grid on;
+xlabel('Pmiss=Pfn: false negative rate (FNR)');
+ylabel('Pfa=Pfp: false positive rate (FPR)');
+title('ROC comparing FNR versus FPR');
+saveas(350,[pnFigures filesep sprintf('FPRversusFNR')],'bmp');
+
+figure(450); 
+plot(1-cdfDiff(end:-1:1),1-cdfSame(end:-1:1),'b');
+axis([0 1 0 1]); grid on;
+xlabel('Pfa: false positive rate (FPR)');
+ylabel('Pd: true positive rate (TPR)');
+title('ROC comparing TPR versus FPR');
+saveas(450,[pnFigures filesep sprintf('TPRversusFPR')],'bmp');
 
 
