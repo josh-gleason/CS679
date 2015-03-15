@@ -32,6 +32,18 @@ classParams = dlmread([pnParams filesep fnParams]);
 [nClasses, nColumns] = size(classParams);
 nFeatures = classParams(1,2);
 
+nc = input('Number of classifier params to use? 1, 2, or 3 ','s');
+switch lower(nc)
+    case '1'
+       classes2test=1;
+    case '2'
+       classes2test=2;
+    case '3'
+       classes2test=3;
+    otherwise
+        error('reenter number of classes');
+end
+
 %----------------------------------------------------------
 % selectFeatures: 
 %
@@ -75,15 +87,15 @@ for iTrial = 1:1
     %  Determine the mean and covariance of each class
     %
     
-    classScore = zeros(nClasses,nTotalSamples);
+    classScore = zeros(numel(classes2test),nTotalSamples);
         
-    for iClass = 1:nClasses
+    for iClass = classes2test
         
         % Classifier params
         pC = classParams(iClass,1);
         
-        meanV  = classParams(iClass,3:3+nFeatures-1)';
-        covM = reshape(classParams(iClass,nFeatures+3:end),nFeatures,nFeatures);
+        meanV = classParams(iClass,3:3+nFeatures-1)';
+        covM  = reshape(classParams(iClass,nFeatures+3:end),nFeatures,nFeatures);
         
         %         fprintf(1,'class = %d\n',iClass);
         %         disp(meanV);
@@ -107,28 +119,28 @@ for iTrial = 1:1
         grid on; xlabel('sample'); ylabel('classifier score');
         
     end
-    [scoreAll, decisions]=max(classScore,[],1);
+    %[scoreAll, decisions]=max(classScore,[],1);
     
-    fprintf(1,'Classifier results:\n');
-    truePositives  = zeros(nClasses,1);
-    falsePositives = zeros(nClasses,1);
-    falseNegatives = zeros(nClasses,1);
-    for iClass = 1:nClasses
-        
-        truthSameClass  = (truthData == iClass);
-        truthDiffClass  = (truthData ~= iClass);
-        
-        nSS = cDef(iClass).nS;       % number of samples in same class
-        nSD = nTotalSamples - nSS;   % number of samples in diff class
-        
-        truePositives(iClass)  = sum(decisions(truthSameClass)==iClass)/nSS;
-        falsePositives(iClass) = sum(decisions(truthDiffClass)==iClass)/nSD;
-        falseNegatives(iClass) = sum(decisions(truthSameClass)~=iClass)/nSS;
-        
-        fprintf(1,'\tiClass = %d tp = %f fp = %f fn = %f\n',iClass,...
-            truePositives(iClass),falsePositives(iClass),falseNegatives(iClass));
-        
-    end
+%     fprintf(1,'Classifier results:\n');
+%     truePositives  = zeros(nClasses,1);
+%     falsePositives = zeros(nClasses,1);
+%     falseNegatives = zeros(nClasses,1);
+%     for iClass = classes2test
+%         
+%         truthSameClass  = (truthData == iClass);
+%         truthDiffClass  = (truthData ~= iClass);
+%         
+%         nSS = cDef(iClass).nS;       % number of samples in same class
+%         nSD = nTotalSamples - nSS;   % number of samples in diff class
+%         
+%         truePositives(iClass)  = sum(decisions(truthSameClass)==iClass)/nSS;
+%         falsePositives(iClass) = sum(decisions(truthDiffClass)==iClass)/nSD;
+%         falseNegatives(iClass) = sum(decisions(truthSameClass)~=iClass)/nSS;
+%         
+%         fprintf(1,'\tiClass = %d tp = %f fp = %f fn = %f\n',iClass,...
+%             truePositives(iClass),falsePositives(iClass),falseNegatives(iClass));
+%         
+%     end
     
 end
 

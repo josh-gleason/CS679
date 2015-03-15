@@ -125,28 +125,28 @@ for iTrial = 1:1
         saveas(180,[pnFigures filesep sprintf('classifierScoresHist_class=%d',iClass)],'bmp');
        
     end
-    [scoreAll, decisions]=max(classScore,[],1);
-    
-    fprintf(1,'Classifier results:\n');
-    truePositives  = zeros(nClasses,1);
-    falsePositives = zeros(nClasses,1);
-    falseNegatives = zeros(nClasses,1);
-    for iClass = 1:nClasses
-        
-        truthSameClass  = (truthData == iClass);
-        truthDiffClass  = (truthData ~= iClass);
-        
-        nSS = cDef(iClass).nS;       % number of samples in same class
-        nSD = nTotalSamples - nSS;   % number of samples in diff class
-        
-        truePositives(iClass)  = sum(decisions(truthSameClass)==iClass)/nSS;
-        falsePositives(iClass) = sum(decisions(truthDiffClass)==iClass)/nSD;
-        falseNegatives(iClass) = sum(decisions(truthSameClass)~=iClass)/nSS;
-        
-        fprintf(1,'\tiClass = %d tp = %f fp = %f fn = %f\n',iClass,...
-            truePositives(iClass),falsePositives(iClass),falseNegatives(iClass));
-        
-    end
+%     [scoreAll, decisions]=max(classScore,[],1);
+%     
+%     fprintf(1,'Classifier results:\n');
+%     truePositives  = zeros(nClasses,1);
+%     falsePositives = zeros(nClasses,1);
+%     falseNegatives = zeros(nClasses,1);
+%     for iClass = 1:nClasses
+%         
+%         truthSameClass  = (truthData == iClass);
+%         truthDiffClass  = (truthData ~= iClass);
+%         
+%         nSS = cDef(iClass).nS;       % number of samples in same class
+%         nSD = nTotalSamples - nSS;   % number of samples in diff class
+%         
+%         truePositives(iClass)  = sum(decisions(truthSameClass)==iClass)/nSS;
+%         falsePositives(iClass) = sum(decisions(truthDiffClass)==iClass)/nSD;
+%         falseNegatives(iClass) = sum(decisions(truthSameClass)~=iClass)/nSS;
+%         
+%         fprintf(1,'\tiClass = %d tp = %f fp = %f fn = %f\n',iClass,...
+%             truePositives(iClass),falsePositives(iClass),falseNegatives(iClass));
+%         
+%     end
     
 end
 fclose(fid);
@@ -158,15 +158,15 @@ truthDiffClass  = truthData ~= 1;
 dataSame = classScore(1,truthSameClass);
 dataDiff = classScore(1,truthDiffClass);
 
-minScore = min(min(dataSame(:)),min(dataDiff(:)));
-maxScore = max(max(dataSame(:),max(dataDiff(:))));
-[histScores, histIndices]= hist([dataSame dataDiff],minScore:maxScore);
+minScore = min(classScore(:));
+maxScore = max(classScore(:));
+[histScores, histIndices]= hist(classScore,minScore:maxScore);
 pdfScores = histScores/sum(histScores(:));
 cdfScores = cumsum(pdfScores);
 
 minIndex = find(cdfScores < 0.01);
 minIndex = minIndex(end);
-maxIndex = find(cdfScores > 0.9999);
+maxIndex = find(cdfScores > 0.99);
 maxIndex = maxIndex(1);
 pdfDomain = histIndices(minIndex):0.1:histIndices(maxIndex);  % a reasonable range for the feature scores
 
