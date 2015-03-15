@@ -160,7 +160,7 @@ dataDiff = classScore(1,truthDiffClass);
 
 minScore = min(classScore(:));
 maxScore = max(classScore(:));
-[histScores, histIndices]= hist(classScore,minScore:maxScore);
+[histScores, histIndices]= hist(classScore(1,:),minScore:maxScore);
 pdfScores = histScores/sum(histScores(:));
 cdfScores = cumsum(pdfScores);
 
