@@ -18,6 +18,14 @@ trainImg = imread([pn filesep fn]);
 [fn, pn]=uigetfile('..\data\*','ref image');
 refImg = imread([pn filesep fn]);
 
+experiment = questdlg('Which Experiment would you like to run?', 'Experiment', ...
+    'rgb', 'chr', 'crcb', ...
+    'rgb' ...   % Default choice
+);
+if isempty(experiment)
+    return;
+end
+
 %---------------------------------------------------------------
 %
 % Extract the features for each class.  Classes are defined as:
@@ -34,7 +42,6 @@ refImg = imread([pn filesep fn]);
 
 % 
 nClasses = 2;
-experiment = 'rgb';
 tNow = datestr(now,30);
 switch lower(experiment)
     case 'rgb'
@@ -128,7 +135,7 @@ function [faceFeats, bckgndFeats] = extractFeatures(trainImg,refImg)
     grnImage = trainImg(:,:,2);
     bluImage = trainImg(:,:,3);
 
-    indxFace   = find(binRef(:)==255);
+    indxFace   = find(binRef(:)>200);
     indxBckgnd = find(binRef(:)==0);
 
     faceFeats = double([redImage(indxFace)';...

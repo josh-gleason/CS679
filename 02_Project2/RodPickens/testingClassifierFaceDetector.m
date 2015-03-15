@@ -21,6 +21,7 @@ close all; clear variables; clc; fclose('all');
 pnFigures = uigetdir('.','save figures to which directory');
 
 [fnFeats, pnFeats] = uigetfile('*.mat','select feature file');
+
 [~, fileName, ~]=fileparts(fnFeats);
     
 load([pnFeats filesep fnFeats]);
@@ -32,17 +33,7 @@ classParams = dlmread([pnParams filesep fnParams]);
 [nClasses, nColumns] = size(classParams);
 nFeatures = classParams(1,2);
 
-nc = input('Number of classifier params to use? 1, 2, or 3 ','s');
-switch lower(nc)
-    case '1'
-       classes2test=1;
-    case '2'
-       classes2test=2;
-    case '3'
-       classes2test=3;
-    otherwise
-        error('reenter number of classes');
-end
+classes2test = input(sprintf('Number of classes to use? max = %d ',nClasses));
 
 %----------------------------------------------------------
 % selectFeatures: 
@@ -87,9 +78,9 @@ for iTrial = 1:1
     %  Determine the mean and covariance of each class
     %
     
-    classScore = zeros(numel(classes2test),nTotalSamples);
+    classScore = zeros(classes2test,nTotalSamples);
         
-    for iClass = classes2test
+    for iClass = 1:classes2test
         
         % Classifier params
         pC = classParams(iClass,1);
