@@ -38,7 +38,7 @@ end
 % truth, viz. the pixels in the image that are face and the 
 % pixles that are not face.
 %
-[fFeats, bFeats] = extractFeatures(trainImg,refImg);
+[fFeats, bFeats, fIdx, bIdx] = extractFeatures(trainImg,refImg);
 
 % 
 nClasses = 2;
@@ -127,7 +127,7 @@ save([pn filesep featFileName],'-v7.3');
 
 end
 
-function [faceFeats, bckgndFeats] = extractFeatures(trainImg,refImg)
+function [faceFeats, bckgndFeats, indxFace, indxBckgnd] = extractFeatures(trainImg,refImg)
     
     binRef   = refImg(:,:,1);
 
