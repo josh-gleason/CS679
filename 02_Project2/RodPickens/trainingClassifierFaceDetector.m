@@ -102,9 +102,9 @@ for iTrial = 1:1
         fprintf(fid,',%f',covM);
         if iClass < nClasses, fprintf(fid,'\n'); end
         
-%         fprintf(1,'class = %d\n',iClass);
-%         disp(meanV);
-%         disp(covM);
+        fprintf(1,'class = %d\n',iClass);
+        disp(meanV);
+        disp(covM);
         
         % Classifiy all samples according to the classifier
         classScore(iClass,:) = bayesianClassifier(features, meanV, covM, pC);
@@ -155,23 +155,27 @@ fclose(fid);
 truthSameClass  = truthData == 1;
 truthDiffClass  = truthData ~= 1;
 
-scoreDiff = classScore(1,:) - classScore(2:end,:);
+scoreDiff = classScore(1,:) - max(classScore(2:end, :), [], 1);
 dataSame = scoreDiff(truthSameClass);
 dataDiff = scoreDiff(truthDiffClass);
-
+%%
 % Show class scores as image
 for iClass = 1:nClasses
-    figure(120+4*(iClass-1));
-    [r,c,~] = size(trainImg);
+    figNum = 120+4*(iClass-1);
+    figure(figNum);
+    r = imgRows;
+    c = imgCols;
     imageScore = zeros(r,c);
     imageScore(fIdx) = classScore(iClass,truthSameClass);
     imageScore(bIdx) = classScore(iClass,truthDiffClass);
     imagesc(exp(imageScore));
     colorbar;
     title(sprintf('Discriminate Score Class (log normalized) %d', iClass));
+    saveas(figNum, [pnFigures filesep sprintf('score_image_%d', iClass)], 'bmp');
 
     % plot classification results
-    figure(121+4*(iClass-1));
+    figNum = 121+4*(iClass-1);
+    figure(figNum);
     [~,idx] = max(classScore);
     decisionIdx = (idx==iClass);
     imageClass = zeros(r,c);
@@ -179,27 +183,48 @@ for iClass = 1:nClasses
     imageClass(bIdx) = decisionIdx(truthDiffClass);
     imagesc(imageClass);
     title(sprintf('Class %d classification results (Yellow for classified)', iClass));
-    
+    saveas(figNum, [pnFigures filesep sprintf('classified_image_%d', iClass)], 'bmp');
+
     if iClass == 1
-        figure(122+4*(iClass-1));
+        figNum = 122+4*(iClass-1);
+        figure(figNum);
         imageTruth = zeros(r,c);
         imageTruth(fIdx) = truthSameClass(truthSameClass);
         imagesc(imageTruth);
         title(sprintf('Truth Class %d', iClass));
-
-        figure(123+4*(iClass-1));
+        
+        figNum = 123+4*(iClass-1);
+        if ishandle(figNum), close(figNum); end
+        figure(figNum);
         imageRes = zeros(r,c);
-        % 0: false negative
-        % 1: false positive
+        % 1: true positive
         % 2: true negative
-        % 3: true positive
-        imageRes(imageTruth ~= imageClass & imageClass == 0) = 0;
-        imageRes(imageTruth ~= imageClass & imageClass == 1) = 1;
+        % 3: false positive
+        % 4: false negative
+        imageRes(imageTruth == imageClass & imageClass == 1) = 1;
         imageRes(imageTruth == imageClass & imageClass == 0) = 2;
-        imageRes(imageTruth == imageClass & imageClass == 1) = 3;
-        imagesc(imageRes);
-        colorbar;
-        title(sprintf('0: False Negative\n1: False Positive\n2: True Negative\n3: True Position'));
+        imageRes(imageTruth ~= imageClass & imageClass == 1) = 3;        
+        imageRes(imageTruth ~= imageClass & imageClass == 0) = 4;
+        imagesc(imageRes); hold on;
+        ax = axis;
+        % 4 color map
+        map = [0.1 0.8 0.1; ...
+               0.5 0.5 0.5; ...
+               0.8 0.1 0.1; ...
+               0.0 0.3 0.9];
+        colormap(map);
+        % These fill nothing but generate handles for the legend with the correct colors
+        h(1) = fill(1,1,map(1,:));
+        h(2) = fill(1,1,map(2,:));
+        h(3) = fill(1,1,map(3,:));
+        h(4) = fill(1,1,map(4,:));
+        legend(h, 'True Positive', 'True Negative', 'False Positive', 'False Negative', 'Location', 'eastoutside');
+        axis(ax);
+        title('Classification Results');
+        p = get(gcf, 'Position');
+        % increase width to fit legend
+        set(gcf, 'Position', [p(1) p(2) p(3)*1.4 p(4)]);
+        saveas(figNum, [pnFigures filesep sprintf('classifier_result_img')], 'bmp');
 %         FN = sum(imageRes(:)==0)
 %         FP = sum(imageRes(:)==1)
 %         TN = sum(imageRes(:)==2)
@@ -213,21 +238,21 @@ end
 
 minScore = min(scoreDiff);
 maxScore = max(scoreDiff);
-[histScores, histIndices] = hist(scoreDiff,linspace(minScore,maxScore,1000));
+[histScores, histIndices] = hist(scoreDiff,linspace(minScore,maxScore,200));
 pdfScores = histScores/sum(histScores(:));
 cdfScores = cumsum(pdfScores);
 
 minIndex = find(cdfScores < 0.01, 1, 'last');
 if isempty(minIndex), minIndex = 1; end
 maxIndex = find(cdfScores > 0.99, 1, 'first');
-if isempty(maxIndex), maxIndex = 1000; end
+if isempty(maxIndex), maxIndex = 200; end
 pdfDomain = linspace(histIndices(minIndex),histIndices(maxIndex),1000);
 
 histSame = hist(dataSame,pdfDomain); sumSame=sum(histSame);
 histDiff = hist(dataDiff,pdfDomain); sumDiff=sum(histDiff);
 
-pdfSame = histSame / sumSame;
-pdfDiff = histDiff / sumDiff;
+pdfSame = histSame/sumSame;
+pdfDiff = histDiff/sumDiff;
 
 cdfSame = cumsum(pdfSame);
 cdfDiff = cumsum(pdfDiff);

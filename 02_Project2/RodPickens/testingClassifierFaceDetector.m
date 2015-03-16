@@ -88,9 +88,9 @@ for iTrial = 1:1
         meanV = classParams(iClass,3:3+nFeatures-1)';
         covM  = reshape(classParams(iClass,nFeatures+3:end),nFeatures,nFeatures);
         
-        %         fprintf(1,'class = %d\n',iClass);
-        %         disp(meanV);
-        %         disp(covM);
+        fprintf(1,'class = %d\n',iClass);
+        disp(meanV);
+        disp(covM);
         
         % Classifiy all samples according to the classifier
         classScore(iClass,:) = bayesianClassifier(features, meanV, covM, pC);
@@ -139,20 +139,98 @@ end
 truthSameClass  = truthData == 1;
 truthDiffClass  = truthData ~= 1;
 
-dataSame = classScore(1,truthSameClass);
-dataDiff = classScore(1,truthDiffClass);
+scoreDiff = classScore(1,:) - max(classScore(2:end, :), [], 1);
+dataSame = scoreDiff(1,truthSameClass);
+dataDiff = scoreDiff(1,truthDiffClass);
 
-minScore = min(min(dataSame(:)),min(dataDiff(:)));
-maxScore = max(max(dataSame(:),max(dataDiff(:))));
-[histScores, histIndices]= hist([dataSame dataDiff],minScore:maxScore);
+% Show class scores as image
+for iClass = 1:nClasses
+    figNum = 120+4*(iClass-1);
+    figure(figNum);
+    r = imgRows;
+    c = imgCols;
+    imageScore = zeros(r,c);
+    imageScore(fIdx) = classScore(iClass,truthSameClass);
+    imageScore(bIdx) = classScore(iClass,truthDiffClass);
+    imagesc(exp(imageScore));
+    colorbar;
+    title(sprintf('Discriminate Score Class (log normalized) %d', iClass));
+    saveas(figNum, [pnFigures filesep sprintf('score_image_%d', iClass)], 'bmp');
+
+    % plot classification results
+    figNum = 121+4*(iClass-1);
+    figure(figNum);
+    [~,idx] = max(classScore);
+    decisionIdx = (idx==iClass);
+    imageClass = zeros(r,c);
+    imageClass(fIdx) = decisionIdx(truthSameClass);
+    imageClass(bIdx) = decisionIdx(truthDiffClass);
+    imagesc(imageClass);
+    title(sprintf('Class %d classification results (Yellow for classified)', iClass));
+    saveas(figNum, [pnFigures filesep sprintf('classified_image_%d', iClass)], 'bmp');
+
+    if iClass == 1
+        figNum = 122+4*(iClass-1);
+        figure(figNum);
+        imageTruth = zeros(r,c);
+        imageTruth(fIdx) = truthSameClass(truthSameClass);
+        imagesc(imageTruth);
+        title(sprintf('Truth Class %d', iClass));
+        
+        figNum = 123+4*(iClass-1);
+        if ishandle(figNum), close(figNum); end
+        figure(figNum);
+        imageRes = zeros(r,c);
+        % 1: true positive
+        % 2: true negative
+        % 3: false positive
+        % 4: false negative
+        imageRes(imageTruth == imageClass & imageClass == 1) = 1;
+        imageRes(imageTruth == imageClass & imageClass == 0) = 2;
+        imageRes(imageTruth ~= imageClass & imageClass == 1) = 3;        
+        imageRes(imageTruth ~= imageClass & imageClass == 0) = 4;
+        imagesc(imageRes); hold on;
+        ax = axis;
+        % 4 color map
+        map = [0.1 0.8 0.1; ...
+               0.5 0.5 0.5; ...
+               0.8 0.1 0.1; ...
+               0.0 0.3 0.9];
+        colormap(map);
+        % These fill nothing but generate handles for the legend with the correct colors
+        h(1) = fill(1,1,map(1,:));
+        h(2) = fill(1,1,map(2,:));
+        h(3) = fill(1,1,map(3,:));
+        h(4) = fill(1,1,map(4,:));
+        legend(h, 'True Positive', 'True Negative', 'False Positive', 'False Negative', 'Location', 'eastoutside');
+        axis(ax);
+        title('Classification Results');
+        p = get(gcf, 'Position');
+        % increase width to fit legend
+        set(gcf, 'Position', [p(1) p(2) p(3)*1.4 p(4)]);
+        saveas(figNum, [pnFigures filesep sprintf('classifier_result_img')], 'bmp');
+%         FN = sum(imageRes(:)==0)
+%         FP = sum(imageRes(:)==1)
+%         TN = sum(imageRes(:)==2)
+%         TP = sum(imageRes(:)==3)
+%         
+%         TPR = TP/(TP+FN)
+%         FPR = FP/(FP+TN)
+%         FNR = FN/(FN+TP)
+    end
+end
+
+minScore = min(scoreDiff);
+maxScore = max(scoreDiff);
+[histScores, histIndices] = hist(scoreDiff,linspace(minScore,maxScore,200));
 pdfScores = histScores/sum(histScores(:));
 cdfScores = cumsum(pdfScores);
 
-minIndex = find(cdfScores < 0.01);
-minIndex = minIndex(end);
-maxIndex = find(cdfScores > 0.9999);
-maxIndex = maxIndex(1);
-pdfDomain = histIndices(minIndex):0.1:histIndices(maxIndex);  % a reasonable range for the feature scores
+minIndex = find(cdfScores < 0.01, 1, 'last');
+if isempty(minIndex), minIndex = 1; end
+maxIndex = find(cdfScores > 0.99, 1, 'first');
+if isempty(maxIndex), maxIndex = 200; end
+pdfDomain = linspace(histIndices(minIndex),histIndices(maxIndex),1000);
 
 histSame = hist(dataSame,pdfDomain); sumSame=sum(histSame);
 histDiff = hist(dataDiff,pdfDomain); sumDiff=sum(histDiff);
@@ -171,10 +249,10 @@ legend('same','diff'); grid on;
 saveas(250,[pnFigures filesep sprintf('cdf_features')],'bmp');
 
 figure(350); 
-plot(cdfDiff(1:end),cdfSame(end:-1:1),'b');
+plot(1-cdfDiff(1:end),cdfSame(1:end),'b');
 axis([0 1 0 1]); grid on;
-xlabel('Pmiss=Pfn: false negative rate (FNR)');
-ylabel('Pfa=Pfp: false positive rate (FPR)');
+xlabel('Pfa=Pfp: false positive rate (FPR)');
+ylabel('Pmiss=Pfn: false negative rate (FNR)');
 title('ROC comparing FNR versus FPR');
 saveas(350,[pnFigures filesep sprintf('FPRversusFNR')],'bmp');
 
@@ -185,5 +263,4 @@ xlabel('Pfa: false positive rate (FPR)');
 ylabel('Pd: true positive rate (TPR)');
 title('ROC comparing TPR versus FPR');
 saveas(450,[pnFigures filesep sprintf('TPRversusFPR')],'bmp');
-
 

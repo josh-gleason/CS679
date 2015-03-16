@@ -38,6 +38,8 @@ end
 % truth, viz. the pixels in the image that are face and the 
 % pixles that are not face.
 %
+
+% idx saved for later
 [fFeats, bFeats, fIdx, bIdx] = extractFeatures(trainImg,refImg);
 
 % 
@@ -122,6 +124,13 @@ end
 
 fprintf(1,'Save to feature directories related to %s\n',experiment);
 pn = uigetdir('.','select directory to place project data (feature files)');
+
+% saved for later
+[imgRows, imgCols, ~] = size(trainImg);
+
+% these are a lot of extra space, lets delete them
+clear trainImg
+clear refImg
 
 save([pn filesep featFileName],'-v7.3');
 
