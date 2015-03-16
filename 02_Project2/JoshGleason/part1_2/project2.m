@@ -21,6 +21,19 @@ function project2()
     p2.sigma2 = [4 0; 0 16];
 
     close('all');
-    run_experiment(p1, 1);
-    run_experiment(p2, 2);
+    
+    exp = questdlg('Which Experiment would you like to run?', 'Experiment', 'Standard', 'Error Rate', 'ER vs N Training', 'Standard');
+    
+    if strcmp(exp, 'Standard')
+        experiment = @run_experiment;
+    elseif strcmp(exp, 'Error Rate')
+        experiment = @run_experiment_1000;
+    elseif strcmp(exp, 'ER vs N Training')
+        experiment = @run_experiments;
+    else
+        return;
+    end
+    
+    experiment(p1, 1);
+    experiment(p2, 2);
 end

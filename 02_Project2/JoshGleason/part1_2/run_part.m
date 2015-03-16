@@ -42,17 +42,19 @@ function err_ratio = run_part(samples, n_training, axTitle)
     end
     
     % Display Results
-    fprintf('Class 1 mean = [ %8.5f, %8.5f ]\n', mu1(1), mu1(2));
-    fprintf('Class 1 Covariance %5d training samples : [ %8.5f %8.5f ]\n', n_training, covariance1(1,1), covariance1(1,2));
-    fprintf('                                            [ %8.5f %8.5f ]\n', covariance1(2,1), covariance1(2,2));
+    if exist('axTitle', 'var')
+        fprintf('Class 1 mean = [ %8.5f, %8.5f ]\n', mu1(1), mu1(2));
+        fprintf('Class 1 Covariance %5d training samples : [ %8.5f %8.5f ]\n', n_training, covariance1(1,1), covariance1(1,2));
+        fprintf('                                            [ %8.5f %8.5f ]\n', covariance1(2,1), covariance1(2,2));
     
-    fprintf('\n');
+        fprintf('\n');
 
-    fprintf('Class 2 mean = [ %8.5f, %8.5f ]\n', mu2(1), mu2(2));
-    fprintf('Class 2 Covariance %5d training samples : [ %8.5f %8.5f ]\n', n_training, covariance2(1,1), covariance2(1,2));
-    fprintf('                                            [ %8.5f %8.5f ]\n', covariance2(2,1), covariance2(2,2));
+        fprintf('Class 2 mean = [ %8.5f, %8.5f ]\n', mu2(1), mu2(2));
+        fprintf('Class 2 Covariance %5d training samples : [ %8.5f %8.5f ]\n', n_training, covariance2(1,1), covariance2(1,2));
+        fprintf('                                            [ %8.5f %8.5f ]\n', covariance2(2,1), covariance2(2,2));
 
-    fprintf('\n');
+        fprintf('\n');
+    end
     
     % Copy into params struct and use code from project 1
     params.mu1 = mu1;
