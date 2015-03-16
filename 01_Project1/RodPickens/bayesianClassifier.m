@@ -8,9 +8,9 @@
 %  Inputs:
 %
 %     x = n-D feature vector
-%     u = n-D mean vector for class i
-%     S = n x n covariance matrix for class i
-%     pW = a-priori probability for class i
+%     classifierParams.u = n-D mean vector for class i
+%     classifierParams.S = n x n covariance matrix for class i
+%     classifierParams.pClass = pW = a-priori probability for class wi
 %
 %  Outputs:
 %
