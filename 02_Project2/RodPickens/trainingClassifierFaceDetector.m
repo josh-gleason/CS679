@@ -18,15 +18,15 @@ close all; clear variables; clc; fclose('all');
 % generate or read feature data
 %
 % structure for class statistics
-load('TrainFolders');
-%pnFigures = uigetdir('.','save figures to which directory');
 
-%[fnFeats, pnFeats] = uigetfile('*.mat','select feature file');
+pnFigures = uigetdir('.','save figures to which directory');
+
+[fnFeats, pnFeats] = uigetfile('*.mat','select feature file');
 [~, fileName, ~]=fileparts(fnFeats);
     
 load([pnFeats filesep fnFeats]);
 
-%pnParams = uigetdir('.','select directory to place classifier parameters');
+pnParams = uigetdir('.','select directory to place classifier parameters');
 
 fid = fopen([pnParams filesep fileName '.dat'],'w');
 
