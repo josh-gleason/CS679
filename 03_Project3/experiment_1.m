@@ -16,7 +16,7 @@ function experiment_1(args)
     U = training.eigenvectors(:,1:k);
 
     % Compute the covariance 
-    covariance = U'*U*diag(training.eigenvalues(1:k));
+    covariance = U.'*training.samples*training.samples.'*U;
     
     % Project both training and testing to eigenspace
     train_b = U.' * training.samples;
