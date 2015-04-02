@@ -5,6 +5,7 @@ function args = get_args(arglist)
     args.experiment = -1;
     args.testset = -1;
     args.information = -1;
+    args.removesamples = -1;
     args.datadir = 'data';
     args.resultsdir = 'results';
     args.trainingfile = 'auto';
@@ -18,31 +19,31 @@ function args = get_args(arglist)
             error('Expected string');
         end
         switch lower(arglist{idx})
-            case {'experiment', 'e'}
+            case {'experiment', 'exp'}
                 % 0, 1, or 2
                 args.experiment = arglist{idx+1};
                 if ~isfloat(args.experiment)
                     args.experiment = -1;
                 end
-            case {'testset', 's'}
+            case {'testset', 'set'}
                 % Valid options {'high', 'h'}, {'low', 'l'}
                 args.testset = arglist{idx+1};
                 if ~isfloat(args.testset)
                     args.testset = -1;
                 end
-            case {'information', 'i'}
+            case {'information', 'info'}
                 % Valid values 1 <= i <= 0
                 args.information = arglist{idx+1};
                 if ~isfloat(args.information)
                     args.information = -1;
                 end
-            case {'datadir', 'd'}
+            case {'datadir', 'dd'}
                 % Data directory
                 args.datadir = arglist{idx+1};
                 if ~ischar(datadir)
                     args.datadir = '';
                 end
-            case {'resultsdir', 'r'}
+            case {'resultsdir', 'rd'}
                 % Results directory
                 args.resultsdir = arglist{idx+1};
                 if ~ischar(resultsdir)
@@ -54,6 +55,12 @@ function args = get_args(arglist)
                 if ~ischar(args.trainingfile)
                     args.trainingfile = '';
                 end
+            case {'removesamples', 'rm'}
+                args.removesamples = arglist{idx+1};
+                if ~isfloat(args.removesamples)
+                    args.removesamples = -1;
+                end
+                args.removesamples = round(args.removesamples);
             otherwise
                 error('Unrecognized parameter option %s\n', arglist{idx});
         end
@@ -66,7 +73,14 @@ function args = get_args(arglist)
         fprintf('  0. Train and test reconstruction (also run experiment a.I)\n');
         fprintf('  1. Run experiments A.II, A.III, and A.IV\n');
         fprintf('  2. Run experiment B\n');
-        args.experiment = input('Enter Selection: ');
+        args.experiment = input('Enter Selection (Default 0): ');
+        if isempty(args.experiment)
+            args.experiment = 0;
+        end
+        if ~isfloat(args.experiment)
+            args.experiment = -1;
+        end
+        args.experiment = round(args.experiment);
     end
     
     % Functions for querying other arguments from user if not provided
@@ -75,14 +89,41 @@ function args = get_args(arglist)
             fprintf('Which Test Set would you like to use?\n');
             fprintf('  1. High Resolution\n');
             fprintf('  2. Low Resolution\n');
-            args.testset = input('Enter Selection: ');
+            args.testset = input('Enter Selection (Default 1): ');
+            if isempty(args.testset)
+                args.testset = 1;
+            end
+            if ~isfloat(args.testset)
+                args.testset = -1;
+            end
+            args.testset = round(args.testset);
         end
     end
 
     function query_information()
         while ~(args.information > 0 && args.information <= 1)
             fprintf('How much information would you like to retain?\n');
-            args.information = input('Enter Value [0,1): ');
+            args.information = input('Enter Value (Default 0.80): ');
+            if isempty(args.information)
+                args.information = 0.80;
+            end
+            if ~isfloat(args.information)
+                args.information = -1;
+            end
+        end
+    end
+
+    function query_samples()
+        while ~(args.removesamples >= 0)
+            fprintf('How many subjects would you like to REMOVE?\n');
+            args.removesamples = input('Enter Value (Default 0): ');
+            if isempty(args.removesamples)
+                args.removesamples = 0;
+            end
+            if ~isfloat(args.removesamples)
+                args.removesamples = -1;
+            end
+            args.removesamples = round(args.removesamples);
         end
     end
 
@@ -97,8 +138,15 @@ function args = get_args(arglist)
             valid_times = [];
             for dir_idx = 1:length(dir_names)
                 [set, count] = sscanf(dir_names{dir_idx}, 'training_%c_*');
-                if count && strcmp(set, testset_str{args.testset})
-                    timestamp = sscanf(dir_names{dir_idx}, ['training_' set '_%s']);
+                rm_count = Inf;
+                if count
+                    rm_count = sscanf(dir_names{dir_idx}, ['training_' set '_%d_*']);
+                    if isempty(rm_count)
+                        rm_count = -1;
+                    end
+                end
+                if count && strcmp(set, testset_str{args.testset}) && rm_count == args.removesamples
+                    timestamp = sscanf(dir_names{dir_idx}, ['training_' set '_' int2str(rm_count) '_%s']);
                     valid_idx(end+1) = dir_idx;
                     valid_times(end+1) = datenum(timestamp, 'yyyymmdd_HHMMSSFFF');
                 end
@@ -109,6 +157,7 @@ function args = get_args(arglist)
                 args.trainingfile = [args.resultsdir filesep d(valid_idx(v)).name filesep 'training.mat'];
             else
                 % will query
+                fprintf('No matching training sets found\n');
                 args.trainingfile = '';
             end            
         end
@@ -140,13 +189,16 @@ function args = get_args(arglist)
     switch args.experiment
         case 0
             query_dataset();
-            argstring = sprintf('training_%s_%s', testset_str{args.testset}, datestamp);
+            query_samples();
+            argstring = sprintf('training_%s_%d_%s', testset_str{args.testset}, ...
+                args.removesamples, datestamp);
             args.resultsdir = [args.resultsdir filesep argstring];
             args.trainingfile = [args.resultsdir filesep 'training.mat'];
             mkdir(args.resultsdir);
             fprintf(1, 'Training results be written to directory %s\n', args.resultsdir);
             fprintf(1, 'Training filename will be %s\n', args.trainingfile);
         case 1
+            args.removesamples = 0;
             query_dataset();
             query_information();
             query_training();
@@ -157,10 +209,11 @@ function args = get_args(arglist)
             fprintf(1, 'Results will be written to directory %s\n', args.resultsdir);
         case 2
             query_dataset();
+            query_samples();
             query_information();
             query_training();
-            argstring = sprintf('experimentA_%s%03.0f_%s', testset_str{args.testset}, ...
-                                round(args.information*100), datestamp);
+            argstring = sprintf('experimentB_%s%03.0f_%d_%s', testset_str{args.testset}, ...
+                                round(args.information*100), args.removesamples, datestamp);
             args.resultsdir = [args.resultsdir filesep argstring];
             mkdir(args.resultsdir);
             fprintf(1, 'Results will be written to directory %s\n', args.resultsdir);

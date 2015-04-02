@@ -4,6 +4,18 @@ function training = train_eigenface(args)
     % Load samples
     [samples, labels, img_size] = load_dataset(args.traindir);
     
+    % remove first n subjects from training data
+    if args.removesamples > 0
+        % find the nth unique label
+        [~,unique_idx] = unique(labels);
+        if length(unique_idx) <= args.removesamples
+            error('Cannot remove %d samples, only %d unqiue labels', args.removesamples, length(unique_idx));
+        end
+        final_idx = unique_idx(args.removesamples+1):length(labels);
+        labels = labels(final_idx);
+        samples = samples(:,final_idx);
+    end
+    
     % Calculate mean face and subtract
     mean_face = mean(samples, 2);
     samples = bsxfun(@minus, samples, mean_face);
@@ -37,7 +49,7 @@ function training = train_eigenface(args)
     % Create a cumulative function to find the right amount of information to retain
     information = cumsum(eigenvalues) / total;
     
-    % Save training data
+    % Construct training data struct
     training.d = dims;
     training.labels = labels;
     training.mean = mean_face;

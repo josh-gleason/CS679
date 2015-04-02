@@ -5,9 +5,9 @@ function training(args)
     training = train_eigenface(args);
 
     % Reconstruct first image in training data
-    image = get_training_image(training, 1);
-    b = eigen_image(training, training.eigenvectors, image);
-    image_rep = reproject_image(training, training.eigenvectors, b);
+    image = reshape(training.samples(:,1) + training.mean, training.img_size);
+    b = training.eigenvectors.'*training.samples(:,1);
+    image_rep = reshape(training.eigenvectors*b + training.mean, training.img_size);
 
     % Show reconstructed image
     h = figure();
