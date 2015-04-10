@@ -59,4 +59,55 @@ function experiment_2(args)
     % -Josh
     
     % Experiment B ...
+      
+    trainLabels = repmat(training.labels',1,length(test_data.labels),1);
+    testLabels  = repmat(test_data.labels,length(training.labels),1);
+    
+    matchSamples  = trainLabels == testLabels;
+    colsIntruder   = sum(matchSamples,1) == 0;
+    
+    maxDm = max(dist(:));
+    dx = maxDm / 25;
+    domainX = 0:dx:maxDm;
+        
+    hist_w0 = hist(dist(matchSamples == 1),domainX);
+    hist_w1 = hist(dist(:,colsIntruder),domainX);
+    
+    nSamples_w0 = sum(hist_w0);
+    nSamples_w1 = sum(hist_w1);
+   
+    pdf_w0 = hist_w0/nSamples_w0;
+    pdf_w1 = hist_w1/nSamples_w1;
+    
+    cdf_w0 = cumsum(hist_w0)/nSamples_w0;
+    cdf_w1 = cumsum(hist_w1)/nSamples_w1;
+   
+    subplot(2,2,1);
+    h=figure; hold on;
+    plot(domainX,pdf_w0,'r',domainX,pdf_w1,'b'); grid on;
+    title('p(d_M | w_0) and p(d_M | w_1)');
+    legend('w_0 = friendly', 'w_1=intruder');
+    xlabel('d_M (Mahalanobis distance)');
+    ylabel('probability density');
+    
+    subplot(2,2,2);    
+    plot(domainX,cdf_w0,'r',domainX,cdf_w1,'b'); grid on;
+    title('P(d_M | w_0) and P(d_M | w_1)');
+    legend('w_0 = friendly', 'w_1=intruder');
+    xlabel('d_M (Mahalanobis distance)');
+    ylabel('cumulative probability density');
+
+    subplot(2,2,3);    
+    figure; plot(cdf_w1,cdf_w0,'b');
+    title('ROC: p(d_M | w_0) versus p(d_M | w_1)');
+    legend('w_0 = friendly', 'w_1=intruder');
+    xlabel('p(d_M | w_1)');
+    ylabel('p(d_M | w_0)');
+   
+    % Resize and save figure
+    p = get(h, 'Position');
+    set(h, 'Position', [p(1) p(2) 930 285]);
+    savefig(h, [args.resultsdir filesep 'PartB_Performance.fig']);
+    print(h, [args.resultsdir filesep 'PartB_Performance.png'], '-dpng')
+    
 end
