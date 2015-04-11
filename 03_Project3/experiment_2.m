@@ -82,32 +82,33 @@ function experiment_2(args)
     cdf_w0 = cumsum(hist_w0)/nSamples_w0;
     cdf_w1 = cumsum(hist_w1)/nSamples_w1;
    
-    subplot(2,2,1);
     h=figure; hold on;
     plot(domainX,pdf_w0,'r',domainX,pdf_w1,'b'); grid on;
     title('p(d_M | w_0) and p(d_M | w_1)');
     legend('w_0 = friendly', 'w_1=intruder');
     xlabel('d_M (Mahalanobis distance)');
     ylabel('probability density');
+    % Resize and save figure
+    savefig(h, [args.resultsdir filesep 'PartB_Performance.fig']);
+    print(h, [args.resultsdir filesep 'PartB_Performance.png'], '-dpng')
     
-    subplot(2,2,2);    
+    h=figure; hold on;
     plot(domainX,cdf_w0,'r',domainX,cdf_w1,'b'); grid on;
     title('P(d_M | w_0) and P(d_M | w_1)');
     legend('w_0 = friendly', 'w_1=intruder');
     xlabel('d_M (Mahalanobis distance)');
     ylabel('cumulative probability density');
-
-    subplot(2,2,3);    
-    figure; plot(cdf_w1,cdf_w0,'b');
-    title('ROC: p(d_M | w_0) versus p(d_M | w_1)');
-    legend('w_0 = friendly', 'w_1=intruder');
-    xlabel('p(d_M | w_1)');
-    ylabel('p(d_M | w_0)');
-   
-    % Resize and save figure
-    p = get(h, 'Position');
-    set(h, 'Position', [p(1) p(2) 930 285]);
     savefig(h, [args.resultsdir filesep 'PartB_Performance.fig']);
     print(h, [args.resultsdir filesep 'PartB_Performance.png'], '-dpng')
+
+    h=figure; hold on;
+    plot(cdf_w1,cdf_w0,'b'); grid on;
+    title('ROC: p(d_M | w_0) versus p(d_M | w_1)');
+    xlabel('p(d_M | w_1)');
+    ylabel('p(d_M | w_0)');
+    savefig(h, [args.resultsdir filesep 'PartB_Performance.fig']);
+    print(h, [args.resultsdir filesep 'PartB_Performance.png'], '-dpng')
+
+    save([args.resultsdir filesep 'cumulativeDistributionFeatures'],'cdf_w1','cdf_w0');
     
 end
