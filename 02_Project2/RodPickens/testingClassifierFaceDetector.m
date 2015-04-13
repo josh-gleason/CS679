@@ -12,28 +12,28 @@
 %
 %-----------------------------------------------------------
 
-close all; clear variables; clc; fclose('all');
-
 %-----------------------------------------------------------
 % generate or read feature data
 %
 % structure for class statistics
-pnFigures = uigetdir('.','save figures to which directory');
-
-[fnFeats, pnFeats] = uigetfile('*.mat','select feature file');
+if ~exist('preset','var')
+    close all; clear variables; clc; fclose('all');
+    pnFigures = uigetdir('.','save figures to which directory');
+    [fnFeats, pnFeats] = uigetfile('*.mat','select feature file');
+    [fnParams, pnParams] = uigetfile('*.dat','select classifier parameters');
+end
 
 [~, fileName, ~]=fileparts(fnFeats);
-    
 load([pnFeats filesep fnFeats]);
-
-[fnParams, pnParams] = uigetfile('*.dat','select classifier parameters');
 
 classParams = dlmread([pnParams filesep fnParams]);
 
 [nClasses, nColumns] = size(classParams);
 nFeatures = classParams(1,2);
 
-classes2test = input(sprintf('Number of classes to use? max = %d ',nClasses));
+if ~exist('classes2test','var')
+    classes2test = input(sprintf('Number of classes to use? max = %d ',nClasses));
+end
 
 %----------------------------------------------------------
 % selectFeatures: 
@@ -138,11 +138,12 @@ end
 % plot the results
 truthSameClass  = truthData == 1;
 truthDiffClass  = truthData ~= 1;
-
-scoreDiff = classScore(1,:) - max(classScore(2:end, :), [], 1);
+%%
+scoreDiff = classScore(2,:) - classScore(1,:);
 dataSame = scoreDiff(1,truthSameClass);
 dataDiff = scoreDiff(1,truthDiffClass);
 
+%
 % Show class scores as image
 for iClass = 1:nClasses
     figNum = 120+4*(iClass-1);
@@ -209,14 +210,16 @@ for iClass = 1:nClasses
         % increase width to fit legend
         set(gcf, 'Position', [p(1) p(2) p(3)*1.4 p(4)]);
         saveas(figNum, [pnFigures filesep sprintf('classifier_result_img')], 'bmp');
-%         FN = sum(imageRes(:)==0)
-%         FP = sum(imageRes(:)==1)
-%         TN = sum(imageRes(:)==2)
-%         TP = sum(imageRes(:)==3)
-%         
-%         TPR = TP/(TP+FN)
-%         FPR = FP/(FP+TN)
-%         FNR = FN/(FN+TP)
+        
+        % Classification results
+        TP = sum(imageRes(:)==1);
+        TN = sum(imageRes(:)==2);
+        FP = sum(imageRes(:)==3);
+        FN = sum(imageRes(:)==4);
+
+        TPR = TP/(TP+FN);
+        FPR = FP/(FP+TN);
+        FNR = FN/(FN+TP);
     end
 end
 
@@ -248,19 +251,23 @@ xlabel('classifier score'); ylabel('prob');
 legend('same','diff'); grid on;
 saveas(250,[pnFigures filesep sprintf('cdf_features')],'bmp');
 
-figure(350); 
-plot(1-cdfDiff(1:end),cdfSame(1:end),'b');
+figure(350); hold on;
+plot(cdfDiff(1:end),1-cdfSame(1:end),'b');
+rocAreaFPR_FNR = trapz(cdfDiff(1:end),1-cdfSame(1:end));
 axis([0 1 0 1]); grid on;
 xlabel('Pfa=Pfp: false positive rate (FPR)');
 ylabel('Pmiss=Pfn: false negative rate (FNR)');
-title('ROC comparing FNR versus FPR');
+title(sprintf('ROC comparing FNR versus FPR\nArea : %0.4f', rocAreaFPR_FNR));
+plot(FPR, FNR, ' *', 'LineWidth', 2);
 saveas(350,[pnFigures filesep sprintf('FPRversusFNR')],'bmp');
 
-figure(450); 
-plot(1-cdfDiff(end:-1:1),1-cdfSame(end:-1:1),'b');
+figure(450); hold on;
+plot(cdfDiff(end:-1:1),cdfSame(end:-1:1),'b');
+rocAreaFPR_TPR = trapz(cdfDiff(1:end),cdfSame(1:end));
 axis([0 1 0 1]); grid on;
 xlabel('Pfa: false positive rate (FPR)');
 ylabel('Pd: true positive rate (TPR)');
-title('ROC comparing TPR versus FPR');
+title(sprintf('ROC comparing TPR versus FPR\nArea : %0.4f', rocAreaFPR_TPR));
+plot(FPR, TPR, ' *', 'LineWidth', 2);
 saveas(450,[pnFigures filesep sprintf('TPRversusFPR')],'bmp');
 

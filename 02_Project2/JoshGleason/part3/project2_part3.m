@@ -46,9 +46,12 @@ function project2_part3()
     [roc_cbcr, h_cbcr] = test_classifier(model_face_cbcr, model_bg_cbcr, images_cbcr(idx_test), truth(idx_test), 'YCbCr', '-k');
     
     figure(10);
-    legend([h_rgb(1) h_chromatic(1) h_cbcr(1) h_rgb(2) h_chromatic(2) h_cbcr(2)], 'RGB', 'Chromatic', 'YCbCr', ...
-          'RGB Priors Threshold', 'Chromatic Priors Threshold', 'YCbCr Priors Threshold');
-    title(sprintf('ROC Area\nRGB : %0.04f\nChromatic : %0.04f\nYCbCr : %0.04f', roc_rgb, roc_chromatic, roc_cbcr));
+    legend([h_rgb(1) h_chromatic(1) h_cbcr(1) h_rgb(2) h_chromatic(2) h_cbcr(2)], 'RGB', 'Chromatic', 'YCbCr');
+    title(sprintf('ROC Area\nRGB : %0.04f\nChromatic : %0.04f\nYCbCr : %0.04f', roc_rgb(1), roc_chromatic(1), roc_cbcr(1)));
+    
+    figure(11);
+    legend([h_rgb(3) h_chromatic(3) h_cbcr(3) h_rgb(4) h_chromatic(4) h_cbcr(4)], 'RGB', 'Chromatic', 'YCbCr');
+    title(sprintf('ROC Area\nRGB : %0.04f\nChromatic : %0.04f\nYCbCr : %0.04f', roc_rgb(2), roc_chromatic(2), roc_cbcr(2)));
 end
 
 function [model_face, model_bg] = train_classifier(image, truth)
@@ -193,9 +196,18 @@ function [roc_area, h] = test_classifier(model_face, model_bg, images, truth, ti
     figure(10); hold on;
     h(1) = plot(fpr, fnr, line_type, 'LineWidth', 2);
     h(2) = plot(fpr(prior_tidx), fnr(prior_tidx), [' *' line_type(end)], 'LineWidth', 2);
-    xlabel('False Positive Rate');
-    ylabel('False Negative Rate');
-    roc_area = trapz(fnr, fpr);
+    xlabel('Pfa: false positive rate (FPR)');
+    ylabel('Pd: false negative rate (FNR)');
+    roc_area(1) = -trapz(fpr,fnr);
+    axis([0 1 0 1]);
+    grid on;
+    
+    figure(11); hold on;
+    h(3) = plot(fpr, 1-fnr, line_type, 'LineWidth', 2);
+    h(4) = plot(fpr(prior_tidx), 1-fnr(prior_tidx), [' *' line_type(end)], 'LineWidth', 2);
+    xlabel('Pfa: false positive rate (FPR)');
+    ylabel('Pd: true positive rate (TPR)');
+    roc_area(2) = -trapz(fpr,1-fnr);
     axis([0 1 0 1]);
     grid on;
 end

@@ -12,21 +12,21 @@
 %
 %-----------------------------------------------------------
 
-close all; clear variables; clc; fclose('all');
-
 %-----------------------------------------------------------
 % generate or read feature data
 %
 % structure for class statistics
 
-pnFigures = uigetdir('.','save figures to which directory');
+if ~exist('preset','var')
+    close all; clear variables; clc; fclose('all');
+    pnFigures = uigetdir('.','save figures to which directory');
+    [fnFeats, pnFeats] = uigetfile('*.mat','select feature file');
+    pnParams = uigetdir('.','select directory to place classifier parameters');
+end
 
-[fnFeats, pnFeats] = uigetfile('*.mat','select feature file');
 [~, fileName, ~]=fileparts(fnFeats);
     
 load([pnFeats filesep fnFeats]);
-
-pnParams = uigetdir('.','select directory to place classifier parameters');
 
 fid = fopen([pnParams filesep fileName '.dat'],'w');
 
@@ -49,7 +49,6 @@ features = features(features2keep,:);
 cV = {'ro','b.'};
 figure(100);
 hold on;
-
 for iClass = nClasses:-1:1
     
     fV = cDef(iClass).fV(features2keep,:);
@@ -57,10 +56,33 @@ for iClass = nClasses:-1:1
     plot(fV(1,:),fV(2,:),cV{iClass});
     xlabel('feature 1'); ylabel('feature 2');
     title('face/other class separability');
-    grid on;
-    
+    grid on;    
 end
+ax = axis();
+
+% Plot 3D histogram
+color = [0.5, 0.0, 0.0; ...
+         0.0, 0.2, 0.4];
+hold on;
+for iClass = nClasses:-1:1
+    
+    fV = cDef(iClass).fV(features2keep,:);
+    
+    [edgesX,edgesY,N] = ndhist(fV(1,:), fV(2,:), 'bins', 0.2, 'filter', 'noplot');
+
+    % put contour lines at 10% 50% and 90% of maximum
+    max_n = max(N(:));
+    min_n = min(N(:));
+    n = min_n + [0.1 0.5 0.9] * (max_n-min_n);
+    
+    contour(edgesX, edgesY, N, n, 'Color', color(iClass,:), 'LineWidth', 2);
+    xlabel('feature 1'); ylabel('feature 2');
+    title('face/other class separability');
+    grid on;
+end
+axis(ax);
 saveas(100,[pnFigures filesep 'classSeparability'],'bmp');
+
 %--------------------------------------------------------
 % Now train and classify the samples
 nSkip = 1;
@@ -150,15 +172,15 @@ for iTrial = 1:1
     
 end
 fclose(fid);
-
+%%
 % plot the results
 truthSameClass  = truthData == 1;
 truthDiffClass  = truthData ~= 1;
-
-scoreDiff = classScore(1,:) - max(classScore(2:end, :), [], 1);
+%
+scoreDiff = classScore(2,:) - classScore(1,:);
 dataSame = scoreDiff(truthSameClass);
 dataDiff = scoreDiff(truthDiffClass);
-%%
+%
 % Show class scores as image
 for iClass = 1:nClasses
     figNum = 120+4*(iClass-1);
@@ -225,14 +247,14 @@ for iClass = 1:nClasses
         % increase width to fit legend
         set(gcf, 'Position', [p(1) p(2) p(3)*1.4 p(4)]);
         saveas(figNum, [pnFigures filesep sprintf('classifier_result_img')], 'bmp');
-%         FN = sum(imageRes(:)==0)
-%         FP = sum(imageRes(:)==1)
-%         TN = sum(imageRes(:)==2)
-%         TP = sum(imageRes(:)==3)
-%         
-%         TPR = TP/(TP+FN)
-%         FPR = FP/(FP+TN)
-%         FNR = FN/(FN+TP)
+        TP = sum(imageRes(:)==1);
+        TN = sum(imageRes(:)==2);
+        FP = sum(imageRes(:)==3);
+        FN = sum(imageRes(:)==4);
+
+        TPR = TP/(TP+FN);
+        FPR = FP/(FP+TN);
+        FNR = FN/(FN+TP);
     end
 end
 
@@ -264,19 +286,23 @@ xlabel('classifier score'); ylabel('prob');
 legend('same','diff'); grid on;
 saveas(250,[pnFigures filesep sprintf('cdf_features')],'bmp');
 
-figure(350); 
-plot(1-cdfDiff(1:end),cdfSame(1:end),'b');
+figure(350); hold on;
+plot(cdfDiff(1:end),1-cdfSame(1:end),'b');
+rocAreaFPR_FNR = trapz(cdfDiff(1:end),1-cdfSame(1:end));
 axis([0 1 0 1]); grid on;
 xlabel('Pfa=Pfp: false positive rate (FPR)');
 ylabel('Pmiss=Pfn: false negative rate (FNR)');
-title('ROC comparing FNR versus FPR');
+title(sprintf('ROC comparing FNR versus FPR\nArea : %0.4f', rocAreaFPR_FNR));
+plot(FPR, FNR, ' *', 'LineWidth', 2);
 saveas(350,[pnFigures filesep sprintf('FPRversusFNR')],'bmp');
 
-figure(450); 
-plot(1-cdfDiff(end:-1:1),1-cdfSame(end:-1:1),'b');
+figure(450); hold on;
+plot(cdfDiff(end:-1:1),cdfSame(end:-1:1),'b');
+rocAreaFPR_TPR = trapz(cdfDiff(1:end),cdfSame(1:end));
 axis([0 1 0 1]); grid on;
 xlabel('Pfa: false positive rate (FPR)');
 ylabel('Pd: true positive rate (TPR)');
-title('ROC comparing TPR versus FPR');
+title(sprintf('ROC comparing TPR versus FPR\nArea : %0.4f', rocAreaFPR_TPR));
+plot(FPR, TPR, ' *', 'LineWidth', 2);
 saveas(450,[pnFigures filesep sprintf('TPRversusFPR')],'bmp');
 
