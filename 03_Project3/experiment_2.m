@@ -89,8 +89,8 @@ function experiment_2(args)
     xlabel('d_M (Mahalanobis distance)');
     ylabel('probability density');
     % Resize and save figure
-    savefig(h, [args.resultsdir filesep 'PartB_Performance.fig']);
-    print(h, [args.resultsdir filesep 'PartB_Performance.png'], '-dpng')
+    savefig(h, [args.resultsdir filesep 'PartB_PDF.fig']);
+    print(h, [args.resultsdir filesep 'PartB_PDF.png'], '-dpng')
     
     h=figure; hold on;
     plot(domainX,cdf_w0,'r',domainX,cdf_w1,'b'); grid on;
@@ -98,17 +98,21 @@ function experiment_2(args)
     legend('w_0 = friendly', 'w_1=intruder');
     xlabel('d_M (Mahalanobis distance)');
     ylabel('cumulative probability density');
-    savefig(h, [args.resultsdir filesep 'PartB_Performance.fig']);
-    print(h, [args.resultsdir filesep 'PartB_Performance.png'], '-dpng')
+    ax = axis();
+    axis([ax(1) ax(2) ax(3) 1]); % ymax = 1
+    savefig(h, [args.resultsdir filesep 'PartB_CDF.fig']);
+    print(h, [args.resultsdir filesep 'PartB_CDF.png'], '-dpng')
 
     h=figure; hold on;
     plot(cdf_w1,cdf_w0,'b'); grid on;
     title('ROC: p(d_M | w_0) versus p(d_M | w_1)');
     xlabel('p(d_M | w_1)');
     ylabel('p(d_M | w_0)');
+    axis square
+    axis([0 1 0 1]);
     savefig(h, [args.resultsdir filesep 'PartB_Performance.fig']);
     print(h, [args.resultsdir filesep 'PartB_Performance.png'], '-dpng')
-
+    
     save([args.resultsdir filesep 'cumulativeDistributionFeatures'],'cdf_w1','cdf_w0');
     
 end

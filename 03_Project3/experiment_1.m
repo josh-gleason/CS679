@@ -47,6 +47,7 @@ function experiment_1(args)
     ylabel('Performace');
     legend(sprintf('Information %0.2f', info), ...
         'Location', 'southeast');
+    grid on;
     ax = axis();
     axis([ax(1) ax(2) ax(3) 1]); % always go up to 1
     % Save figure
