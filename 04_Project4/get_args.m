@@ -4,7 +4,7 @@ function args = get_args(arglist)
 
     args.experiment = -1;
     args.resolution = -1;
-    args.fold = -1;
+    %args.fold = -1;
     args.datadir = 'data';
     args.resultsdir = 'results';
     args.trainingfile = 'auto';
@@ -15,6 +15,8 @@ function args = get_args(arglist)
                                     'degree',[], ...
                                     'cost'  ,[]);
 
+    NUM_FEATS = 134;
+            
     SVM_CLASSIFIER   = 1;
     BAYES_CLASSIFIER = 2;
     
@@ -46,10 +48,30 @@ function args = get_args(arglist)
                 if ~isfloat(args.resolution)
                     args.resolution = -1;
                 end
-            case {'fold'}
-                args.fold = arglist{idx+1};
-                if ~isfloat(args.fold)
-                    args.fold = -1;
+            case {'kernel', 'k'}
+                args.classifier_params.kernel = arglist{idx+1};
+                if ~isfloat(args.classifier_params.kernel)
+                    args.classifier_params.kernel = -1;
+                end
+            case {'gamma', 'g'}
+                args.classifier_params.gamma = arglist{idx+1};
+                if ~isfloat(args.classifier_params.gamma);
+                    args.classifier_params.gamma = -1;
+                end
+            case {'coef0', 'c0'}
+                args.classifier_params.coef0 = arglist{idx+1};
+                if ~isfloat(args.classifier_params.coef0)
+                    args.classifier_params.coef0 = -1;
+                end
+            case {'degree', 'd'}
+                args.classifier_params.degree = arglist{idx+1};
+                if ~isfloat(args.classifier_params.degree)
+                    args.classifier_params.degree = -1;
+                end
+            case {'cost'}
+                args.classifier_params.cost = arglist{idx+1};
+                if ~isfloat(args.classifier_params.cost)
+                    args.classifier_params.cost = -1;
                 end
             case {'datadir', 'dd'}
                 % Data directory (string)
@@ -76,7 +98,7 @@ function args = get_args(arglist)
     end
 
     % Query user for missing arguments
-    while ~(args.experiment == 1 || args.experiment == 2 || args.experiment == 3 || args.experiment == 4)
+    while ~(args.experiment == 1 || args.experiment == 2 || args.experiment == 3 || args.experiment == 4 || args.experiment == 5 || args.experiment == 6)
         fprintf('Which Experiment would you like to run?\n');
         fprintf('  1. Train experiment 1 (SVM Classification)\n');
         fprintf('  2. Train experiment 2 (Bayesian Classification)\n');
@@ -90,7 +112,7 @@ function args = get_args(arglist)
             args.experiment = -1;
         end
     end
-    if args.experiment == 1 || args.experiment == 3
+    if args.experiment == 1 || args.experiment == 3 || args.experiment == 5
         args.classifier = SVM_CLASSIFIER;
     else
         args.classifier = BAYES_CLASSIFIER;
@@ -113,21 +135,21 @@ function args = get_args(arglist)
         end
     end
 
-    function query_fold()
-        while ~(args.fold == 1 || args.fold == 2 || args.fold == 3)
-            fprintf('Which fold would you like to use?\n');
-            fprintf('  1. Fold 1\n');
-            fprintf('  2. Fold 2\n');
-            fprintf('  3. Fold 3\n');
-            args.fold = input('Enter Selection (Default 1): ');
-            if isempty(args.fold)
-                args.fold = 1;
-            end
-            if ~isfloat(args.fold)
-                args.fold = -1;
-            end
-        end
-    end
+%     function query_fold()
+%         while ~(args.fold == 1 || args.fold == 2 || args.fold == 3)
+%             fprintf('Which fold would you like to use?\n');
+%             fprintf('  1. Fold 1\n');
+%             fprintf('  2. Fold 2\n');
+%             fprintf('  3. Fold 3\n');
+%             args.fold = input('Enter Selection (Default 1): ');
+%             if isempty(args.fold)
+%                 args.fold = 1;
+%             end
+%             if ~isfloat(args.fold)
+%                 args.fold = -1;
+%             end
+%         end
+%     end
 
     function query_datadir()
         while isempty(args.datadir) || ~isdir(args.datadir)
@@ -146,22 +168,30 @@ function args = get_args(arglist)
             end
         end
         
-        args.classifier_params.cost = input('Enter cost      (Default 1) : ');
-        if isempty(args.classifier_params.cost)
-            args.classifier_params.cost = 10;
+        while args.classifier_params.cost < 0
+            args.classifier_params.cost = input('Enter cost      (Default 1) : ');
+            if isempty(args.classifier_params.cost)
+                args.classifier_params.cost = 10;
+            end
         end
-        args.classifier_params.gamma = input('Enter gamma (Default 0.033) : ');
-        if isempty(args.classifier_params.gamma)
-            args.classifier_params.gamma = 1/30;
+        while args.classifier_params.gamma < 0
+            args.classifier_params.gamma = input(sprintf('Enter gamma (Default %0.6f) : ', 1/NUM_FEATS));
+            if isempty(args.classifier_params.gamma)
+                args.classifier_params.gamma = 1/NUM_FEATS;
+            end
         end
         if args.classifier_params.kernel == SVM_KERNEL_POLY
-            args.classifier_params.coef0  = input('Enter coef0     (Default 0) : ');
-            if isempty(args.classifier_params.coef0)
-                args.classifier_params.coef0 = 0;
+            while args.classifier_params.coef0 < 0
+                args.classifier_params.coef0  = input('Enter coef0     (Default 0) : ');
+                if isempty(args.classifier_params.coef0)
+                    args.classifier_params.coef0 = 0;
+                end
             end
-            args.classifier_params.degree = input('Enter degree    (Default 3) : ');
-            if isempty(args.classifier_params.degree)
-                args.classifier_params.degree = 3;
+            while args.classifier_params.degree < 0
+                args.classifier_params.degree = input('Enter degree    (Default 3) : ');
+                if isempty(args.classifier_params.degree)
+                    args.classifier_params.degree = 3;
+                end
             end
         end
         while ~isfield(args, 'classifier_params')
@@ -183,7 +213,7 @@ function args = get_args(arglist)
                 filename = [filename '_L'];
         end
         
-        filename = [filename '_' num2str(args.fold)];
+        %filename = [filename '_' num2str(args.fold)];
         
         switch args.classifier
             case SVM_CLASSIFIER
@@ -237,7 +267,7 @@ function args = get_args(arglist)
                 str2 = dirname(1:find(dirname=='_',1,'last')-1);
                 if strcmp(str1,str2);
                     timestamp = dirname(find(dirname=='_',1,'last')+1:end);
-                    valid_idx(end+1) = dir_names{dir_idx};
+                    valid_idx(end+1) = dir_idx;
                     valid_times(end+1) = datenum(timestamp, 'yyyymmddHHMMSSFFF');
                 end
             end
@@ -266,17 +296,25 @@ function args = get_args(arglist)
 
     query_datadir();
     query_resolution();
-    query_fold();
-    if args.experiment == 1 || args.experiment == 3
+    %query_fold();
+    if args.experiment == 1 || args.experiment == 3 || args.experiment == 5
         query_svn_params();
     end
     if args.experiment == 3 || args.experiment == 4
         query_trainingfile();
         args.resultsdir = gen_resultsdir();
-    else
-        args.trainingfile = [args.resultsdir filesep gen_trainingdir() filesep 'training.mat'];
+    elseif args.experiment == 1 || args.experiment == 2
+        traindir = [args.resultsdir filesep gen_trainingdir()];
+        args.trainingfile = [traindir filesep 'training.mat'];
+        if ~exist(traindir, 'dir')
+            mkdir(traindir);
+        end
     end
-    args
+    if args.resolution == LOW_RES
+        args.datadir = [args.datadir filesep '16_20'];
+    else
+        args.datadir = [args.datadir filesep '48_60'];
+    end
     args.trainingfile
 end
 
