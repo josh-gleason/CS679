@@ -17,6 +17,8 @@ function model = train_1(args)
         training = dlmread([args.datadir filesep train_feats_fnames{idx}], ' ').';
         labels = dlmread([args.datadir filesep train_label_fnames{idx}], ' ').';
 
+        training = training(:, 1:args.numfeats);
+        
         if args.classifier_params.kernel == SVM_KERNEL_POLY
             svm_options = sprintf('-t 1 -d %0.6f -g %0.6f -r %0.6f -c %0.6f', ...
                     args.classifier_params.degree, ...

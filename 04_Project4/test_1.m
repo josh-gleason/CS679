@@ -36,7 +36,7 @@ function accuracy = test_1(args, model_opt)
         val_feats = dlmread([args.datadir filesep val_feats_fnames{idx}], ' ').';
         val_labels = dlmread([args.datadir filesep val_label_fnames{idx}], ' ').';
         
-        feats = [test_feats; val_feats];
+        feats = [test_feats(:, 1:args.numfeats); val_feats(:, 1:args.numfeats)];
         labels = [test_labels; val_labels];
         fprintf('Predicting Fold %d...\n', idx);
         [prediction, svmaccuracy, ~] = svmpredict(labels, feats, model{idx});

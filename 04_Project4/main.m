@@ -17,5 +17,9 @@ function retval = main(varargin)
             % SVM train/test
             model = train_1(args);
             retval = test_1(args, model);
+        case 6
+            % Bayesian train/test
+            model = train_2(args);
+            retval = test_2(args, model);
     end
 end

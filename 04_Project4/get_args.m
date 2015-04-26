@@ -4,10 +4,10 @@ function args = get_args(arglist)
 
     args.experiment = -1;
     args.resolution = -1;
-    %args.fold = -1;
     args.datadir = 'data';
     args.resultsdir = 'results';
     args.trainingfile = 'auto';
+    args.numfeats = -1;
     % Only used for SVM classifier
     args.classifier_params = struct('kernel',-1, ...
                                     'gamma' ,[], ...
@@ -25,6 +25,9 @@ function args = get_args(arglist)
     
     SVM_KERNEL_POLY = 1;
     SVM_KERNEL_RBF  = 2;
+    
+    DEF_FEATS = 30;
+    MAX_FEATS = 134;
     
     % Parse arguments
     idx = 1;
@@ -73,6 +76,11 @@ function args = get_args(arglist)
                 if ~isfloat(args.classifier_params.cost)
                     args.classifier_params.cost = -1;
                 end
+            case {'nfeats', 'f'}
+                args.numfeats = arglist{idx+1};
+                if ~isfloat(args.numfeats)
+                    args.classifier_params.cost = -1;
+                end
             case {'datadir', 'dd'}
                 % Data directory (string)
                 args.datadir = arglist{idx+1};
@@ -104,6 +112,8 @@ function args = get_args(arglist)
         fprintf('  2. Train experiment 2 (Bayesian Classification)\n');
         fprintf('  3. Run experiment 1 (SVM Classification)\n');
         fprintf('  4. Run experiment 2 (Bayesian Classification)\n');
+        fprintf('  5. Train/Test Experiment 1 (SVM Classification) no file output\n');
+        fprintf('  6. Train/Test Experiment 2 (Bayes Classification) no file output\n');
         args.experiment = input('Enter Selection (Default 1): ');
         if isempty(args.experiment)
             args.experiment = 1;
@@ -132,6 +142,19 @@ function args = get_args(arglist)
                 args.resolution = -1;
             end
             args.resolution = round(args.resolution);
+        end
+    end
+
+    function query_numfeats()
+        while ~(args.numfeats <= MAX_FEATS && args.numfeats > 0 && round(args.numfeats) == args.numfeats)
+            fprintf('How many features would you like to use? (Max : %d)\n', MAX_FEATS);
+            args.numfeats = input(sprintf('Enter number (Default %d): ', DEF_FEATS));
+            if isempty(args.numfeats)
+                args.numfeats = DEF_FEATS;
+            end
+            if ~isfloat(args.numfeats)
+                args.numfeats = -1;
+            end
         end
     end
 
@@ -296,7 +319,7 @@ function args = get_args(arglist)
 
     query_datadir();
     query_resolution();
-    %query_fold();
+    query_numfeats();
     if args.experiment == 1 || args.experiment == 3 || args.experiment == 5
         query_svn_params();
     end
