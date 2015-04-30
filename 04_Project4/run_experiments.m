@@ -18,11 +18,11 @@ EXP_BAYES_TRAIN_TEST = 6;
 
 DEF_GAMMA = 1; %1/NUM_FEATS; %1/NUM_FEATS;
 DEF_COEF0 = 0;
-DEF_DEGREE = 3;
+DEF_DEGREE = 1;
 DEF_COST = 1;
 
 % Try different parameters
-resolution = LOW_RES;
+resolution = HIGH_RES;
 gamma = DEF_GAMMA;
 coef0 = DEF_COEF0;
 degree = DEF_DEGREE;
@@ -31,8 +31,8 @@ cost = DEF_COST;
 degrange = [1 2 3 4];
 sigrange = [1 10 100 1000];
 gamrange = 1./(2*sigrange.^2);
+costrange = [1 10 100 1000];
 
-costrange = logspace(0,4,5);
 close all;
 figidx = 0;
 
@@ -85,3 +85,10 @@ for gamma = gamrange
     legend('Fold 1', 'Fold 2', 'Fold 3', 'Average', 'Location', 'Southeast');
 end
 gamma = DEF_GAMMA;
+
+% Bayesian classification
+accuracy_bayes = main('classifier', BAYES_CLASSIFIER, 'experiment', EXP_BAYES_TRAIN_TEST, ...
+            'resolution', resolution, 'nfeats', NUM_FEATS);
+
+fprintf('Bayesian Classification Accuracy %0.2f%% %0.2f%% %0.2f%%\n', accuracy_bayes(1), accuracy_bayes(2), accuracy_bayes(3));
+fprintf('Average Bayesian Classification Accuracy %0.2f%%\n', mean(accuracy_bayes));

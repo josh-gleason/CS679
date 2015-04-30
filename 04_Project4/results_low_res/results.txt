@@ -1,0 +1,2 @@
+Bayes Average Bayesian Classification Accuracy 88.35% 88.35% 89.10%
+Average Bayesian Classification Accuracy 88.60%
