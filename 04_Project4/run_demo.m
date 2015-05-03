@@ -1,6 +1,7 @@
 % Run some simple experiments with svm for demonstration
 
 close all
+addpath([cd filesep 'libsvm'])
 
 KERNEL_LINEAR = 0;
 KERNEL_POLY   = 1;
@@ -9,32 +10,33 @@ KERNEL_SIG    = 3;
 
 kernel = KERNEL_RBF;
 
-sigma  = 0.5;
+sigma  = 25;
 gamma  = 1/(2*sigma^2);
-degree = 1;
-cost   = 10000; 
+degree = 4;
+coef0  = 0;
+cost   = 100;
 
 if kernel == KERNEL_RBF
     kernel_str = 'RBF';
-    param_str = ['\sigma = ' sprintf('%0.2f', sqrt(1/(2*gamma)))];
+    param_str = ['\sigma = ' sprintf('%0.2f and cost %0.1f', sqrt(1/(2*gamma)), cost)];
 elseif kernel == KERNEL_POLY
     kernel_str = 'Polynomial';
-    param_str = ['degree ' sprintf('%0.0f', degree)];
+    param_str = ['degree ' sprintf('%0.0f and cost %0.1f', degree, cost)];
     gamma = 1;
 end
 
-data = [0 0 1; ...
-        0 1 0.5];
-
+data = [0 0 -0.5 1   1; ...
+        0 1  0.5 0.5 -0.5];
+    
 theta = 10 * pi/180;
 R = [cos(theta) sin(theta); ...
     -sin(theta) cos(theta)];
 
 dataR = (R * data).';
 
-labels = [1 1 2].';
+labels = [1 1 1 2 2].';
 
-params = sprintf('-s 0 -t %d -g %0.9f -d %d -c %0.4f', kernel, gamma, degree, cost);
+params = sprintf('-s 0 -t %d -g %0.9f -d %d -c %0.4f -r %0.2f', kernel, gamma, degree, cost, coef0);
 model = svmtrain(labels, dataR, params);
 
 mindims = min(dataR);
